@@ -2,8 +2,8 @@
 //  DeckView.swift
 //  AgInOl
 //
-//  SwiftUI replica of the Elgato Stream Deck Neo running Neo Agent Deck:
-//  4×2 colored key tiles, info-bar screen, two round touch points.
+//  The AgInOl deck: a hardware-style panel with 4×2 colored key tiles,
+//  an info-bar screen, and two round touch points.
 //
 
 import SwiftUI
@@ -30,7 +30,7 @@ struct DeckView: View {
             infoRow
                 .padding(.top, 26)
                 .staggered(show: show, delay: 0.48)
-            Text("STREAM DECK NEO")
+            Text("AGINOL")
                 .font(.system(size: 9, weight: .semibold))
                 .tracking(3.5)
                 .foregroundStyle(.white.opacity(0.22))

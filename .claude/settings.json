@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sips -g *)",
+      "Bash(docker compose logs *)",
+      "Bash(git check-ignore *)",
+      "Bash(screencapture -x *)",
+      "mcp__ccd_session_mgmt__search_session_transcripts"
+    ]
+  }
+}

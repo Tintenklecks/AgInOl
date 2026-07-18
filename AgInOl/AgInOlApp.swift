@@ -2,8 +2,8 @@
 //  AgInOlApp.swift
 //  AgInOl
 //
-//  Agent Information system Overlay — a float-on-top replica of the
-//  Elgato Stream Deck Neo showing AI-agent status on macOS.
+//  Agent Information system Overlay — a float-on-top, hardware-style
+//  deck showing AI-agent status on macOS.
 //
 
 import SwiftUI
