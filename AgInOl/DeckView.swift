@@ -27,6 +27,9 @@ struct DeckView: View {
     @State private var show = false
     @State private var showSettings = false
     @State private var editingSlot: Int?
+    @State private var pickerProviderID: String?
+    @State private var showOnlinePrompt = false
+    @State private var showAgentList = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -68,6 +71,16 @@ struct DeckView: View {
         .overlay {
             if let slot = editingSlot {
                 keyPickerOverlay(slot: slot)
+            }
+        }
+        .overlay {
+            if showOnlinePrompt {
+                onlinePromptOverlay
+            }
+        }
+        .overlay {
+            if showAgentList {
+                agentListOverlay
             }
         }
         .overlay {
@@ -174,6 +187,8 @@ struct DeckView: View {
         case .claudeUsed, .claudeLeft, .codexUsed, .codexLeft, .opencodeUsage:
             model.usageEntry(forProvider: assignment.providerID!)?.tileBackground
                 ?? DeckColor.grayTile
+        case .claudeSpend:
+            model.usageEntry(withID: "claude-spend")?.tileBackground ?? DeckColor.grayTile
         case .info, .clock:
             DeckColor.indigoTile
         }
@@ -196,6 +211,15 @@ struct DeckView: View {
             if let entry = model.usageEntry(forProvider: assignment.providerID!) {
                 UsageKeyContent(usage: entry, showRemaining: true)
             }
+        case .claudeSpend:
+            if let entry = model.usageEntry(withID: "claude-spend") {
+                UsageKeyContent(usage: entry)
+            } else {
+                UsageKeyContent(usage: ProviderUsage(
+                    id: "claude-spend", name: "CLAUDE", tint: DeckColor.gray,
+                    tileBackground: DeckColor.grayTile, kind: .unavailable(caption: "loading")
+                ))
+            }
         case .info:
             InfoKeyContent(model: model)
         case .clock:
@@ -215,8 +239,17 @@ struct DeckView: View {
                 }
             case .allAgents:
                 model.showSummaryPage()
+                showAgentList = true
             case .claudeUsed, .claudeLeft, .codexUsed, .codexLeft, .opencodeUsage:
-                if let page = model.pageIndex(forUsageProvider: assignment.providerID!) {
+                // A tile blocked by the online setting invites enabling it.
+                if let entry = model.usageEntry(forProvider: assignment.providerID!),
+                   case .unavailable(let caption) = entry.kind, caption == "online off" {
+                    showOnlinePrompt = true
+                } else if let page = model.pageIndex(forUsageProvider: assignment.providerID!) {
+                    model.infoPageIndex = page
+                }
+            case .claudeSpend:
+                if let page = model.pageIndex(forUsageID: "claude-spend") {
                     model.infoPageIndex = page
                 }
             case .info:
@@ -227,12 +260,165 @@ struct DeckView: View {
         }
     }
 
-    // MARK: - Key picker (long-press)
+    // MARK: - Key picker (long-press, two layers)
+
+    private struct PickerProvider: Identifiable {
+        let id: String
+        let name: String
+        let options: [KeyAssignment]
+    }
+
+    /// Layer 1 general entries; providers get a layer 2 each. New
+    /// OpenUsage-ported providers slot into this list.
+    private static let generalOptions: [KeyAssignment] = [.allAgents, .info, .clock]
+    private static let pickerProviders: [PickerProvider] = [
+        PickerProvider(id: "claude", name: "Claude",
+                       options: [.claudeStatus, .claudeUsed, .claudeLeft, .claudeSpend]),
+        PickerProvider(id: "codex", name: "Codex",
+                       options: [.codexStatus, .codexUsed, .codexLeft]),
+        PickerProvider(id: "opencode", name: "OpenCode",
+                       options: [.opencodeStatus, .opencodeUsage]),
+    ]
 
     private func keyPickerOverlay(slot: Int) -> some View {
         let close = {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                 editingSlot = nil
+                pickerProviderID = nil
+            }
+        }
+        let currentAssignment = model.keyAssignments.indices.contains(slot)
+            ? model.keyAssignments[slot] : nil
+
+        return ZStack {
+            Color.black.opacity(0.45)
+                .clipShape(RoundedRectangle(cornerRadius: DeckMetrics.bezelCorner,
+                                            style: .continuous))
+                .onTapGesture(perform: close)
+            VStack(alignment: .leading, spacing: 0) {
+                if let providerID = pickerProviderID,
+                   let provider = Self.pickerProviders.first(where: { $0.id == providerID }) {
+                    // Layer 2: one provider's metrics
+                    HStack(spacing: 6) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.5))
+                        Text(provider.name.uppercased())
+                            .font(.system(size: 10, weight: .heavy))
+                            .tracking(1.5)
+                            .foregroundStyle(.white.opacity(0.5))
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                            pickerProviderID = nil
+                        }
+                    }
+                    .padding(.bottom, 8)
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(provider.options) { option in
+                            pickerRow(label: option.metricLabel,
+                                      selected: currentAssignment == option) {
+                                model.assign(option, toSlot: slot)
+                                close()
+                            }
+                        }
+                    }
+                } else {
+                    // Layer 1: general entries + provider list
+                    Text("KEY \(slot + 1) SHOWS")
+                        .font(.system(size: 10, weight: .heavy))
+                        .tracking(1.5)
+                        .foregroundStyle(.white.opacity(0.5))
+                        .padding(.bottom, 8)
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(Self.generalOptions) { option in
+                                pickerRow(label: option.metricLabel,
+                                          selected: currentAssignment == option) {
+                                    model.assign(option, toSlot: slot)
+                                    close()
+                                }
+                            }
+                            Text("PROVIDERS")
+                                .font(.system(size: 8, weight: .heavy))
+                                .tracking(1.5)
+                                .foregroundStyle(.white.opacity(0.35))
+                                .padding(.horizontal, 10)
+                                .padding(.top, 10)
+                                .padding(.bottom, 4)
+                            ForEach(Self.pickerProviders) { provider in
+                                let holdsCurrent = currentAssignment.map {
+                                    provider.options.contains($0)
+                                } ?? false
+                                pickerRow(label: provider.name,
+                                          selected: holdsCurrent,
+                                          chevron: true) {
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                                        pickerProviderID = provider.id
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxHeight: 240)
+                }
+            }
+            .padding(14)
+            .frame(width: 250)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(white: 0.09))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(.white.opacity(0.1), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
+            )
+            .transition(.scale(scale: 0.92).combined(with: .opacity))
+        }
+    }
+
+    private func pickerRow(label: String, selected: Bool, chevron: Bool = false,
+                           action: @escaping () -> Void) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 12, weight: selected ? .bold : .medium))
+                .foregroundStyle(.white.opacity(selected ? 0.95 : 0.7))
+            Spacer()
+            if selected && !chevron {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(DeckColor.green)
+            }
+            if chevron {
+                if selected {
+                    Circle()
+                        .fill(DeckColor.green)
+                        .frame(width: 5, height: 5)
+                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(.white.opacity(selected ? 0.1 : 0))
+        )
+        .contentShape(Rectangle())
+        .onTapGesture(perform: action)
+    }
+
+    // MARK: - Agents list (tap ALL AGENTS)
+
+    private var agentListOverlay: some View {
+        let close = {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                showAgentList = false
             }
         }
         return ZStack {
@@ -241,44 +427,113 @@ struct DeckView: View {
                                             style: .continuous))
                 .onTapGesture(perform: close)
             VStack(alignment: .leading, spacing: 0) {
-                Text("KEY \(slot + 1) SHOWS")
+                HStack {
+                    Text("AGENTS")
+                        .font(.system(size: 10, weight: .heavy))
+                        .tracking(1.5)
+                        .foregroundStyle(.white.opacity(0.5))
+                    Spacer()
+                    CardButton(systemImage: "xmark", action: close)
+                }
+                .padding(.bottom, 6)
+                ForEach(Array(model.agents.enumerated()), id: \.element.id) { index, agent in
+                    if index > 0 { HairlineSeparator() }
+                    HStack(spacing: 10) {
+                        Circle()
+                            .fill(agent.status.tint)
+                            .frame(width: 8, height: 8)
+                            .shadow(color: agent.status.tint.opacity(0.8), radius: 3)
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 8) {
+                                Text(agent.name)
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundStyle(.white.opacity(0.95))
+                                Text(agent.status.label)
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundStyle(agent.status.tint)
+                            }
+                            Text(agent.status == .offline ? "not installed"
+                                 : agent.models.isEmpty ? "no recent model"
+                                 : agent.models.joined(separator: " · "))
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.5))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                        }
+                        Spacer(minLength: 8)
+                        if agent.sessions > 0 {
+                            Text("\(agent.sessions)")
+                                .font(.system(size: 12, weight: .heavy))
+                                .monospacedDigit()
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
+                    }
+                    .padding(.vertical, 9)
+                }
+            }
+            .padding(16)
+            .frame(width: 270)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(white: 0.09))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(.white.opacity(0.1), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
+            )
+            .transition(.scale(scale: 0.92).combined(with: .opacity))
+        }
+    }
+
+    // MARK: - Online access prompt
+
+    private var onlinePromptOverlay: some View {
+        let close = {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                showOnlinePrompt = false
+            }
+        }
+        return ZStack {
+            Color.black.opacity(0.45)
+                .clipShape(RoundedRectangle(cornerRadius: DeckMetrics.bezelCorner,
+                                            style: .continuous))
+                .onTapGesture(perform: close)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("ALLOW ONLINE ACCESS?")
                     .font(.system(size: 10, weight: .heavy))
                     .tracking(1.5)
                     .foregroundStyle(.white.opacity(0.5))
                     .padding(.bottom, 8)
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 2) {
-                        ForEach(KeyAssignment.allCases) { option in
-                            let selected = model.keyAssignments.indices.contains(slot)
-                                && model.keyAssignments[slot] == option
-                            HStack {
-                                Text(option.displayName)
-                                    .font(.system(size: 12, weight: selected ? .bold : .medium))
-                                    .foregroundStyle(.white.opacity(selected ? 0.95 : 0.7))
-                                Spacer()
-                                if selected {
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 10, weight: .bold))
-                                        .foregroundStyle(DeckColor.green)
-                                }
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 7)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .fill(.white.opacity(selected ? 0.1 : 0))
-                            )
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                model.assign(option, toSlot: slot)
-                                close()
-                            }
+                Text("Plan limits only exist on the vendors' servers. AgInOl would fetch them with the CLIs' own credentials — a one-time Keychain prompt may appear. Everything else stays local.")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom, 12)
+                HStack(spacing: 8) {
+                    Text("Not now")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(Capsule().fill(.white.opacity(0.08)))
+                        .contentShape(Capsule())
+                        .onTapGesture(perform: close)
+                    Spacer()
+                    Text("Go online")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.black.opacity(0.85))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(Capsule().fill(DeckColor.green))
+                        .contentShape(Capsule())
+                        .onTapGesture {
+                            settings.onlineAccess = true
+                            close()
                         }
-                    }
                 }
-                .frame(maxHeight: 240)
             }
-            .padding(14)
+            .padding(16)
             .frame(width: 250)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -315,8 +570,8 @@ struct DeckView: View {
 // MARK: - Key chrome
 
 /// One physical key: colored card face, glass highlight, breathing press
-/// physics. Click fires `action`; holding ≥ 0.45 s fires `longPressAction`
-/// on release (choose what the key displays).
+/// physics. Click fires `action`; holding ≥ 0.45 s or double-tapping
+/// fires `longPressAction` on release (choose what the key displays).
 struct KeyView<Content: View>: View {
     var background: Color
     var appearDelay: Double
@@ -327,6 +582,7 @@ struct KeyView<Content: View>: View {
 
     @GestureState private var isPressed = false
     @State private var pressBegan: Date?
+    @State private var lastTapAt = Date.distantPast
 
     var body: some View {
         ZStack {
@@ -360,7 +616,17 @@ struct KeyView<Content: View>: View {
                 .onEnded { _ in
                     let wasLong = pressBegan.map { Date().timeIntervalSince($0) >= 0.45 } ?? false
                     pressBegan = nil
-                    wasLong ? longPressAction() : action()
+                    if wasLong {
+                        longPressAction()
+                    } else if Date().timeIntervalSince(lastTapAt) < 0.35 {
+                        // Double tap: the first tap already ran the normal
+                        // action; the quick second one opens the key menu.
+                        lastTapAt = .distantPast
+                        longPressAction()
+                    } else {
+                        lastTapAt = Date()
+                        action()
+                    }
                 }
         )
         .staggered(show: show, delay: appearDelay)
@@ -396,6 +662,14 @@ struct AgentKeyContent: View {
                 .foregroundStyle(agent.status.tint)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
+            if agent.status != .offline, let model = agent.models.first {
+                Text(model)
+                    .font(.system(size: 8.5, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.5))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .padding(.top, 1)
+            }
 
             Spacer(minLength: 0)
 
@@ -403,11 +677,14 @@ struct AgentKeyContent: View {
                 .font(.system(size: 9, weight: .semibold))
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(0.85))
-            Text(agent.hintCaption)
-                .font(.system(size: 7.5, weight: .medium))
-                .foregroundStyle(.white.opacity(0.38))
-                .padding(.top, 2)
-                .padding(.bottom, 10)
+                .padding(.bottom, agent.status == .needsYou || agent.status == .offline ? 0 : 10)
+            if agent.status == .needsYou || agent.status == .offline {
+                Text(agent.hintCaption)
+                    .font(.system(size: 7.5, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.38))
+                    .padding(.top, 2)
+                    .padding(.bottom, 10)
+            }
         }
         .padding(.horizontal, 6)
         .onAppear {
@@ -769,9 +1046,7 @@ struct SettingsCard: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.9))
                 }
-                .toggleStyle(.switch)
-                .controlSize(.mini)
-                .tint(DeckColor.green)
+                .toggleStyle(DeckToggleStyle())
                 Text("Fetch Claude/Codex limits with the CLIs' own credentials. May show a one-time Keychain prompt. Off = fully local.")
                     .font(.system(size: 8.5, weight: .medium))
                     .foregroundStyle(.white.opacity(0.4))
@@ -781,7 +1056,7 @@ struct SettingsCard: View {
 
             HairlineSeparator()
 
-            Text("Long-press any key to choose what it displays")
+            Text("Double-tap or long-press any key to choose what it displays")
                 .font(.system(size: 8.5, weight: .medium))
                 .foregroundStyle(.white.opacity(0.4))
                 .padding(.vertical, 12)
@@ -811,6 +1086,30 @@ struct SettingsCard: View {
                 )
                 .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
         )
+    }
+}
+
+/// Dark-card switch: macOS's .switch style renders an invisible track on
+/// our near-black background, so draw the capsule ourselves.
+struct DeckToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack {
+            configuration.label
+            Spacer()
+            Capsule()
+                .fill(configuration.isOn ? DeckColor.green : .white.opacity(0.18))
+                .frame(width: 36, height: 21)
+                .overlay(alignment: configuration.isOn ? .trailing : .leading) {
+                    Circle()
+                        .fill(.white)
+                        .shadow(color: .black.opacity(0.3), radius: 1, y: 1)
+                        .padding(2.5)
+                }
+                .animation(.spring(response: 0.25, dampingFraction: 0.7),
+                           value: configuration.isOn)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { configuration.isOn.toggle() }
     }
 }
 

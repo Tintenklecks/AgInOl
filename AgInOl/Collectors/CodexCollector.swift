@@ -70,7 +70,8 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
 
             sessions.append(SessionSnapshot(
                 key: key, id: id, state: state, isOpen: state != .idle,
-                activityAt: file.mtime, completionAt: completionAt
+                activityAt: file.mtime, completionAt: completionAt,
+                model: info.model
             ))
             if rateLimits == nil, let limits = info.rateLimits { rateLimits = limits }
         }
@@ -105,6 +106,7 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
         var life: String?
         var lifeAt = Date.distantPast
         var rateLimits: [String: Any]?
+        var model: String?
     }
 
     private func tailInfo(for file: FileStamp) -> Tail {
@@ -126,6 +128,7 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
                 info.lifeAt = cached.info.lifeAt
             }
             if info.rateLimits == nil { info.rateLimits = cached.info.rateLimits }
+            if info.model == nil { info.model = cached.info.model }
         }
         lock.lock()
         tailCache[file.path] = (file.size, file.mtime, info)
@@ -137,6 +140,12 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
     static func parseTail(_ text: String, fallback: Date) -> Tail {
         var tail = Tail()
         for event in CollectorFiles.jsonLines(text) {
+            // Model rides on several event shapes (turn_context, session
+            // meta) — take it from any payload that carries one.
+            if let anyPayload = event["payload"] as? [String: Any],
+               let model = anyPayload["model"] as? String, !model.isEmpty {
+                tail.model = model
+            }
             guard event["type"] as? String == "event_msg",
                   let payload = event["payload"] as? [String: Any],
                   let type = payload["type"] as? String else { continue }

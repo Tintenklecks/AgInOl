@@ -22,6 +22,8 @@ nonisolated struct SessionSnapshot: Sendable {
     var isOpen: Bool
     var activityAt: Date
     var completionAt: Date?
+    /// Most recently used model in this session, when the logs reveal it.
+    var model: String?
 }
 
 nonisolated struct UsageWindowSnapshot: Sendable {
@@ -43,6 +45,8 @@ nonisolated struct ProviderReport: Sendable {
     var installed: Bool
     var sessions: [SessionSnapshot] = []
     var usage = UsageSnapshot()
+    /// Offline token/cost estimate from local logs (Claude only, so far).
+    var spend: SpendSnapshot?
 }
 
 /// Ack bookkeeping handed to every collect() call, mirroring

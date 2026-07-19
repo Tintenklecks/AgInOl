@@ -74,6 +74,8 @@ struct Agent: Identifiable {
     var status: AgentStatus
     var sessions: Int
     var startedAt: Date?
+    /// Models in use, most-recent first, display-shortened.
+    var models: [String] = []
 
     /// "1 active" / "1 attention" / "1 open"
     var sessionCaption: String {
@@ -152,7 +154,7 @@ struct ProviderUsage: Identifiable {
 enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
     case claudeStatus, codexStatus, opencodeStatus
     case allAgents
-    case claudeUsed, claudeLeft
+    case claudeUsed, claudeLeft, claudeSpend
     case codexUsed, codexLeft
     case opencodeUsage
     case info, clock
@@ -167,6 +169,7 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
         case .allAgents:      "All agents"
         case .claudeUsed:     "Claude · % used"
         case .claudeLeft:     "Claude · % left"
+        case .claudeSpend:    "Claude · tokens & cost"
         case .codexUsed:      "Codex · % used"
         case .codexLeft:      "Codex · % left"
         case .opencodeUsage:  "OpenCode · tokens"
@@ -175,10 +178,23 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
         }
     }
 
+    /// Short label for the per-provider layer of the key picker.
+    var metricLabel: String {
+        switch self {
+        case .claudeStatus, .codexStatus, .opencodeStatus: "Status"
+        case .claudeUsed, .codexUsed:                      "% used"
+        case .claudeLeft, .codexLeft:                      "% left"
+        case .claudeSpend, .opencodeUsage:                 "Tokens & cost"
+        case .allAgents:                                   "All agents"
+        case .info:                                        "Info pages"
+        case .clock:                                       "Clock"
+        }
+    }
+
     /// Provider backing this assignment, if any.
     var providerID: String? {
         switch self {
-        case .claudeStatus, .claudeUsed, .claudeLeft:      "claude"
+        case .claudeStatus, .claudeUsed, .claudeLeft, .claudeSpend: "claude"
         case .codexStatus, .codexUsed, .codexLeft:         "codex"
         case .opencodeStatus, .opencodeUsage:              "opencode"
         case .allAgents, .info, .clock:                    nil
@@ -189,6 +205,19 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
         .claudeStatus, .codexStatus, .opencodeStatus, .allAgents,
         .claudeUsed, .codexUsed, .opencodeUsage, .info,
     ]
+}
+
+// MARK: - Model-name shortening
+
+enum ModelName {
+    /// "claude-opus-4-8-20260101" → "opus-4-8"; "gpt-5.6-sol" stays.
+    static func short(_ raw: String) -> String {
+        var name = raw
+        if name.hasPrefix("claude-") { name.removeFirst("claude-".count) }
+        name = name.replacingOccurrences(of: #"-20\d{6}$"#, with: "",
+                                         options: .regularExpression)
+        return name
+    }
 }
 
 // MARK: - Model
@@ -231,6 +260,14 @@ final class DeckModel {
 
     func usageEntry(forProvider id: String) -> ProviderUsage? {
         usage.first { $0.id.hasPrefix(id) }
+    }
+
+    func usageEntry(withID id: String) -> ProviderUsage? {
+        usage.first { $0.id == id }
+    }
+
+    func pageIndex(forUsageID id: String) -> Int? {
+        usage.firstIndex { $0.id == id }.map { agents.count + 1 + $0 }
     }
 
     /// Info-bar page index showing this agent / usage entry.

@@ -58,7 +58,8 @@ nonisolated final class OpenCodeCollector: AgentCollector, @unchecked Sendable {
                 }
                 return SessionSnapshot(
                     key: key, id: id, state: state, isOpen: state != .idle,
-                    activityAt: activityAt, completionAt: completionAt
+                    activityAt: activityAt, completionAt: completionAt,
+                    model: row["model_id"] as? String
                 )
             }
 
@@ -126,6 +127,7 @@ nonisolated final class OpenCodeCollector: AgentCollector, @unchecked Sendable {
       json_extract(m.data, '$.role') AS role,
       json_extract(m.data, '$.finish') AS finish,
       json_type(m.data, '$.error') AS error_type,
+      coalesce(json_extract(m.data, '$.modelID'), json_extract(m.data, '$.model')) AS model_id,
       m.time_created AS message_at
     FROM session s
     LEFT JOIN message m ON m.id = (

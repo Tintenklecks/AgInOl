@@ -104,14 +104,35 @@ final class CollectorHub {
                 workingSince[id] = nil
             }
 
+            // Models most-recently-active first; open sessions win, with the
+            // latest closed session as fallback so idle providers still show one.
+            let byRecency = report.sessions.sorted { $0.activityAt > $1.activityAt }
+            var models: [String] = []
+            for session in byRecency where session.isOpen {
+                if let model = session.model, !models.contains(model) { models.append(model) }
+            }
+            if models.isEmpty, let model = byRecency.first(where: { $0.model != nil })?.model {
+                models.append(model)
+            }
+
             agents.append(Agent(
                 id: id,
                 name: collector.displayName,
                 status: status,
                 sessions: open.count,
-                startedAt: workingSince[id]
+                startedAt: workingSince[id],
+                models: models.prefix(3).map(ModelName.short)
             ))
             usage.append(Self.usageTile(providerID: id, name: collector.displayName, report: report))
+            if id == "claude", let spend = report.spend, spend.tokens7d > 0 {
+                var tile = ProviderUsage(
+                    id: "claude-spend", name: collector.displayName,
+                    tint: DeckColor.orange, tileBackground: DeckColor.brownTile,
+                    kind: .tokens(count: spend.tokens7d, cost: spend.cost7d, window: "7d")
+                )
+                tile.secondaryText = String(format: "24h $%.2f", spend.cost24h)
+                usage.append(tile)
+            }
         }
 
         withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {

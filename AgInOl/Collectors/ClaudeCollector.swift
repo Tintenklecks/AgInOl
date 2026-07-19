@@ -23,6 +23,9 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
     private var usage = UsageSnapshot()
     private var usageFetchedAt = Date.distantPast
     private var cachedToken: String?
+    private let spendScanner = ClaudeSpendScanner()
+    private var spend = SpendSnapshot()
+    private var spendScannedAt = Date.distantPast
 
     init() {
         let env = ProcessInfo.processInfo.environment
@@ -58,10 +61,24 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
         }
 
         let sessions = readSessions(sessionsDir: sessionsDir, projects: projects, context: context)
+
+        lock.lock()
+        let needsSpend = now.timeIntervalSince(spendScannedAt) > 60
+        if needsSpend { spendScannedAt = now }
+        lock.unlock()
+        if needsSpend {
+            let result = spendScanner.scan(files: projects)
+            lock.lock()
+            spend = result
+            lock.unlock()
+        }
+
         lock.lock()
         let currentUsage = usage
+        let currentSpend = spend
         lock.unlock()
-        return ProviderReport(installed: true, sessions: sessions, usage: currentUsage)
+        return ProviderReport(installed: true, sessions: sessions,
+                              usage: currentUsage, spend: currentSpend)
     }
 
     // MARK: - Sessions
@@ -127,7 +144,8 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
 
             sessions.append(SessionSnapshot(
                 key: key, id: sessionID, state: state, isOpen: true,
-                activityAt: activityAt, completionAt: completionAt
+                activityAt: activityAt, completionAt: completionAt,
+                model: tail.lastModel
             ))
         }
         return sessions
@@ -140,6 +158,7 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
         var lastEnd = Date.distantPast
         var lastAssistant = Date.distantPast
         var activityAt: Date?
+        var lastModel: String?
     }
 
     static func parseTail(_ text: String, fallback: Date) -> Tail {
@@ -154,6 +173,9 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
             if type == "assistant" {
                 tail.lastAssistant = max(tail.lastAssistant, at)
                 let message = event["message"] as? [String: Any]
+                if let model = message?["model"] as? String, !model.isEmpty {
+                    tail.lastModel = model
+                }
                 // Any terminal stop reason ends the turn; tool_use does not.
                 if let stop = message?["stop_reason"] as? String, stop != "tool_use" {
                     tail.lastEnd = max(tail.lastEnd, at)
