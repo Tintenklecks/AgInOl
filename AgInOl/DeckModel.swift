@@ -38,12 +38,14 @@ enum AgentStatus: String {
     case working
     case needsYou
     case idle
+    case offline
 
     var label: String {
         switch self {
         case .working:  "WORKING"
         case .needsYou: "NEED YOU"
         case .idle:     "IDLE"
+        case .offline:  "NOT FOUND"
         }
     }
 
@@ -52,6 +54,7 @@ enum AgentStatus: String {
         case .working:  DeckColor.green
         case .needsYou: DeckColor.amber
         case .idle:     DeckColor.gray
+        case .offline:  Color(white: 0.35)
         }
     }
 
@@ -60,6 +63,7 @@ enum AgentStatus: String {
         case .working:  DeckColor.greenTile
         case .needsYou: DeckColor.amberTile
         case .idle:     DeckColor.grayTile
+        case .offline:  Color(red: 0.10, green: 0.10, blue: 0.12)
         }
     }
 }
@@ -77,11 +81,16 @@ struct Agent: Identifiable {
         case .working:  "\(sessions) active"
         case .needsYou: "\(sessions) attention"
         case .idle:     "\(sessions) open"
+        case .offline:  ""
         }
     }
 
     var hintCaption: String {
-        status == .needsYou ? "tap to acknowledge" : "live backend"
+        switch status {
+        case .needsYou: "tap to acknowledge"
+        case .offline:  "not installed"
+        default:        "live backend"
+        }
     }
 }
 
@@ -93,6 +102,8 @@ struct ProviderUsage: Identifiable {
         case percent(fraction: Double, window: String)
         /// Token-count style: 5.18M tokens, $3.84 over 7d.
         case tokens(count: Double, cost: Double, window: String)
+        /// Provider missing, still loading, or errored.
+        case unavailable(caption: String)
     }
 
     let id: String
@@ -100,6 +111,8 @@ struct ProviderUsage: Identifiable {
     let tint: Color
     let tileBackground: Color
     var kind: Kind
+    /// Extra detail shown only on the info-bar page (e.g. Claude's 5h window).
+    var secondaryText: String?
 
     var bigValue: String {
         switch kind {
@@ -109,6 +122,8 @@ struct ProviderUsage: Identifiable {
             count >= 1_000_000
                 ? String(format: "%.2fM", count / 1_000_000)
                 : String(format: "%.0fK", count / 1_000)
+        case .unavailable:
+            "—"
         }
     }
 
@@ -118,15 +133,62 @@ struct ProviderUsage: Identifiable {
             "\(window) used"
         case .tokens(_, let cost, let window):
             String(format: "$%.2f / %@", cost, window)
+        case .unavailable(let caption):
+            caption
         }
     }
 
     var barFraction: Double? {
         switch kind {
         case .percent(let fraction, _): fraction
-        case .tokens: nil
+        case .tokens, .unavailable: nil
         }
     }
+}
+
+// MARK: - Key assignments
+
+/// What one of the 8 physical keys displays. Chosen per key via long-press.
+enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
+    case claudeStatus, codexStatus, opencodeStatus
+    case allAgents
+    case claudeUsed, claudeLeft
+    case codexUsed, codexLeft
+    case opencodeUsage
+    case info, clock
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .claudeStatus:   "Claude · status"
+        case .codexStatus:    "Codex · status"
+        case .opencodeStatus: "OpenCode · status"
+        case .allAgents:      "All agents"
+        case .claudeUsed:     "Claude · % used"
+        case .claudeLeft:     "Claude · % left"
+        case .codexUsed:      "Codex · % used"
+        case .codexLeft:      "Codex · % left"
+        case .opencodeUsage:  "OpenCode · tokens"
+        case .info:           "Info pages"
+        case .clock:          "Clock"
+        }
+    }
+
+    /// Provider backing this assignment, if any.
+    var providerID: String? {
+        switch self {
+        case .claudeStatus, .claudeUsed, .claudeLeft:      "claude"
+        case .codexStatus, .codexUsed, .codexLeft:         "codex"
+        case .opencodeStatus, .opencodeUsage:              "opencode"
+        case .allAgents, .info, .clock:                    nil
+        }
+    }
+
+    static let defaultLayout: [KeyAssignment] = [
+        .claudeStatus, .codexStatus, .opencodeStatus, .allAgents,
+        .claudeUsed, .codexUsed, .opencodeUsage, .info,
+    ]
 }
 
 // MARK: - Model
@@ -137,13 +199,47 @@ final class DeckModel {
     var usage: [ProviderUsage]
     var now = Date()
     var infoPageIndex = 0
+    var keyAssignments: [KeyAssignment]
 
     private var tickTimer: Timer?
     private var pageTimer: Timer?
 
+    private static let assignmentsKey = "KeyAssignments"
+
     init(agents: [Agent], usage: [ProviderUsage]) {
         self.agents = agents
         self.usage = usage
+        if let stored = UserDefaults.standard.stringArray(forKey: Self.assignmentsKey),
+           stored.count == 8 {
+            keyAssignments = stored.map { KeyAssignment(rawValue: $0) ?? .info }
+        } else {
+            keyAssignments = KeyAssignment.defaultLayout
+        }
+    }
+
+    func assign(_ assignment: KeyAssignment, toSlot slot: Int) {
+        guard keyAssignments.indices.contains(slot) else { return }
+        keyAssignments[slot] = assignment
+        UserDefaults.standard.set(keyAssignments.map(\.rawValue), forKey: Self.assignmentsKey)
+    }
+
+    // MARK: Lookups for key rendering
+
+    func agent(withID id: String) -> Agent? {
+        agents.first { $0.id == id }
+    }
+
+    func usageEntry(forProvider id: String) -> ProviderUsage? {
+        usage.first { $0.id.hasPrefix(id) }
+    }
+
+    /// Info-bar page index showing this agent / usage entry.
+    func pageIndex(forAgent id: String) -> Int? {
+        agents.firstIndex { $0.id == id }.map { $0 + 1 }
+    }
+
+    func pageIndex(forUsageProvider id: String) -> Int? {
+        usage.firstIndex { $0.id.hasPrefix(id) }.map { agents.count + 1 + $0 }
     }
 
     // MARK: Aggregates (ALL AGENTS tile + info bar)
@@ -188,12 +284,47 @@ final class DeckModel {
         infoPageIndex = 0
     }
 
+    /// Set by CollectorHub; when nil (previews/demo) the tile flips locally.
+    var onAcknowledge: ((String) -> Void)?
+
     func acknowledge(_ agent: Agent) {
-        guard let index = agents.firstIndex(where: { $0.id == agent.id }) else { return }
-        if agents[index].status == .needsYou {
-            agents[index].status = .working
-            agents[index].startedAt = Date()
+        guard agent.status == .needsYou else { return }
+        if let onAcknowledge {
+            onAcknowledge(agent.id)
+            return
         }
+        guard let index = agents.firstIndex(where: { $0.id == agent.id }) else { return }
+        agents[index].status = .working
+        agents[index].startedAt = Date()
+    }
+
+    /// Replace the demo/previous data with a fresh collector snapshot.
+    func apply(agents newAgents: [Agent], usage newUsage: [ProviderUsage]) {
+        agents = newAgents
+        usage = newUsage
+        if infoPageIndex >= infoPages.count {
+            infoPageIndex = 0
+        }
+    }
+
+    /// Neutral pre-collector state so real data never has to displace
+    /// convincing-looking fake numbers.
+    static func initial() -> DeckModel {
+        DeckModel(
+            agents: [
+                Agent(id: "claude", name: "CLAUDE", status: .idle, sessions: 0, startedAt: nil),
+                Agent(id: "codex", name: "CODEX", status: .idle, sessions: 0, startedAt: nil),
+                Agent(id: "opencode", name: "OPENCODE", status: .idle, sessions: 0, startedAt: nil),
+            ],
+            usage: [
+                ProviderUsage(id: "claude-usage", name: "CLAUDE", tint: DeckColor.gray,
+                              tileBackground: DeckColor.grayTile, kind: .unavailable(caption: "loading")),
+                ProviderUsage(id: "codex-usage", name: "CODEX", tint: DeckColor.gray,
+                              tileBackground: DeckColor.grayTile, kind: .unavailable(caption: "loading")),
+                ProviderUsage(id: "opencode-usage", name: "OPENCODE", tint: DeckColor.gray,
+                              tileBackground: DeckColor.grayTile, kind: .unavailable(caption: "loading")),
+            ]
+        )
     }
 
     // MARK: Timers

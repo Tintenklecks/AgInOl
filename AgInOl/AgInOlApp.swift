@@ -32,12 +32,17 @@ struct AgInOlApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var panel: DeckPanel?
-    let model = DeckModel.demo()
+    let model = DeckModel.initial()
+    let controller = PanelController()
+    private var hub: CollectorHub?
 
     var isDeckVisible: Bool { panel?.isVisible ?? false }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         showDeck()
+        let hub = CollectorHub(model: model)
+        hub.start()
+        self.hub = hub
     }
 
     func toggleDeck() {
@@ -68,7 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func makePanel() -> DeckPanel {
         // Extra padding gives the SwiftUI bezel shadow room to render.
-        let content = DeckView(model: model)
+        let content = DeckView(model: model, controller: controller)
             .padding(36)
 
         let hosting = NSHostingView(rootView: content)
@@ -97,6 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             positionTopTrailing(panel)
         }
         panel.setFrameAutosaveName(Self.frameAutosaveName)
+        controller.panel = panel
 
         return panel
     }

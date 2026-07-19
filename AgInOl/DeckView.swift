@@ -22,7 +22,11 @@ private enum DeckMetrics {
 
 struct DeckView: View {
     @Bindable var model: DeckModel
+    var controller: PanelController
+    @Bindable var settings: AppSettings = .shared
     @State private var show = false
+    @State private var showSettings = false
+    @State private var editingSlot: Int?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -30,7 +34,7 @@ struct DeckView: View {
             infoRow
                 .padding(.top, 26)
                 .staggered(show: show, delay: 0.48)
-            Text("AGINOL")
+            Text("AGINOL - Agentic Information Overlay")
                 .font(.system(size: 9, weight: .semibold))
                 .tracking(3.5)
                 .foregroundStyle(.white.opacity(0.22))
@@ -40,10 +44,68 @@ struct DeckView: View {
         .padding(.horizontal, DeckMetrics.bezelPaddingH)
         .padding(.top, DeckMetrics.bezelPaddingTop)
         .padding(.bottom, DeckMetrics.bezelPaddingBottom)
-        .background(bezel)
+        .background(
+            bezel
+                .contentShape(RoundedRectangle(cornerRadius: DeckMetrics.bezelCorner,
+                                               style: .continuous))
+                .onTapGesture(count: 2) { controller.toggleTuck() }
+        )
+        .overlay(alignment: .bottomTrailing) {
+            GearButton {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    showSettings = true
+                }
+            }
+            .padding(.trailing, 12)
+            .padding(.bottom, 8)
+            .opacity(showSettings ? 0 : 1)
+        }
+        .overlay {
+            if showSettings {
+                settingsOverlay
+            }
+        }
+        .overlay {
+            if let slot = editingSlot {
+                keyPickerOverlay(slot: slot)
+            }
+        }
+        .overlay {
+            // While tucked, any click on the visible sliver slides the
+            // deck back instead of pressing whatever key is under it.
+            if controller.isTucked {
+                Color.black.opacity(0.001)
+                    .contentShape(RoundedRectangle(cornerRadius: DeckMetrics.bezelCorner,
+                                                   style: .continuous))
+                    .onTapGesture { controller.untuck() }
+            }
+        }
         .onAppear {
             model.start()
             show = true
+        }
+    }
+
+    private var settingsOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.45)
+                .clipShape(RoundedRectangle(cornerRadius: DeckMetrics.bezelCorner,
+                                            style: .continuous))
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        showSettings = false
+                    }
+                }
+            SettingsCard(
+                settings: settings,
+                onClose: {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        showSettings = false
+                    }
+                },
+                onQuit: { NSApp.terminate(nil) }
+            )
+            .transition(.scale(scale: 0.92, anchor: .bottomTrailing).combined(with: .opacity))
         }
     }
 
@@ -74,45 +136,160 @@ struct DeckView: View {
 
     private var keyGrid: some View {
         VStack(spacing: DeckMetrics.keySpacing) {
-            HStack(spacing: DeckMetrics.keySpacing) {
-                ForEach(Array(model.agents.enumerated()), id: \.element.id) { index, agent in
-                    KeyView(background: agent.status.tileBackground,
-                            appearDelay: Double(index) * 0.06, show: show) {
-                        model.acknowledge(agent)
-                        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-                            model.infoPageIndex = index + 1
-                        }
-                    } content: {
-                        AgentKeyContent(agent: agent)
+            ForEach(0..<2, id: \.self) { row in
+                HStack(spacing: DeckMetrics.keySpacing) {
+                    ForEach(0..<4, id: \.self) { column in
+                        keySlot(row * 4 + column)
                     }
-                }
-                KeyView(background: DeckColor.oliveTile, appearDelay: 0.18, show: show) {
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-                        model.showSummaryPage()
-                    }
-                } content: {
-                    AllAgentsKeyContent(model: model)
                 }
             }
-            HStack(spacing: DeckMetrics.keySpacing) {
-                ForEach(Array(model.usage.enumerated()), id: \.element.id) { index, entry in
-                    KeyView(background: entry.tileBackground,
-                            appearDelay: 0.24 + Double(index) * 0.06, show: show) {
-                        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-                            model.infoPageIndex = model.agents.count + 1 + index
-                        }
-                    } content: {
-                        UsageKeyContent(usage: entry)
-                    }
-                }
-                KeyView(background: DeckColor.indigoTile, appearDelay: 0.42, show: show) {
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-                        model.advancePage(by: 1)
-                    }
-                } content: {
-                    InfoKeyContent(model: model)
+        }
+    }
+
+    private func keySlot(_ slot: Int) -> some View {
+        let assignment = model.keyAssignments.indices.contains(slot)
+            ? model.keyAssignments[slot] : .info
+        return KeyView(
+            background: keyBackground(for: assignment),
+            appearDelay: Double(slot) * 0.06,
+            show: show,
+            action: { keyAction(for: assignment) },
+            longPressAction: {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    editingSlot = slot
                 }
             }
+        ) {
+            keyContent(for: assignment)
+        }
+    }
+
+    private func keyBackground(for assignment: KeyAssignment) -> Color {
+        switch assignment {
+        case .claudeStatus, .codexStatus, .opencodeStatus:
+            model.agent(withID: assignment.providerID!)?.status.tileBackground
+                ?? DeckColor.grayTile
+        case .allAgents:
+            DeckColor.oliveTile
+        case .claudeUsed, .claudeLeft, .codexUsed, .codexLeft, .opencodeUsage:
+            model.usageEntry(forProvider: assignment.providerID!)?.tileBackground
+                ?? DeckColor.grayTile
+        case .info, .clock:
+            DeckColor.indigoTile
+        }
+    }
+
+    @ViewBuilder
+    private func keyContent(for assignment: KeyAssignment) -> some View {
+        switch assignment {
+        case .claudeStatus, .codexStatus, .opencodeStatus:
+            if let agent = model.agent(withID: assignment.providerID!) {
+                AgentKeyContent(agent: agent)
+            }
+        case .allAgents:
+            AllAgentsKeyContent(model: model)
+        case .claudeUsed, .codexUsed, .opencodeUsage:
+            if let entry = model.usageEntry(forProvider: assignment.providerID!) {
+                UsageKeyContent(usage: entry)
+            }
+        case .claudeLeft, .codexLeft:
+            if let entry = model.usageEntry(forProvider: assignment.providerID!) {
+                UsageKeyContent(usage: entry, showRemaining: true)
+            }
+        case .info:
+            InfoKeyContent(model: model)
+        case .clock:
+            ClockKeyContent(now: model.now)
+        }
+    }
+
+    private func keyAction(for assignment: KeyAssignment) {
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+            switch assignment {
+            case .claudeStatus, .codexStatus, .opencodeStatus:
+                if let agent = model.agent(withID: assignment.providerID!) {
+                    model.acknowledge(agent)
+                    if let page = model.pageIndex(forAgent: agent.id) {
+                        model.infoPageIndex = page
+                    }
+                }
+            case .allAgents:
+                model.showSummaryPage()
+            case .claudeUsed, .claudeLeft, .codexUsed, .codexLeft, .opencodeUsage:
+                if let page = model.pageIndex(forUsageProvider: assignment.providerID!) {
+                    model.infoPageIndex = page
+                }
+            case .info:
+                model.advancePage(by: 1)
+            case .clock:
+                break
+            }
+        }
+    }
+
+    // MARK: - Key picker (long-press)
+
+    private func keyPickerOverlay(slot: Int) -> some View {
+        let close = {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                editingSlot = nil
+            }
+        }
+        return ZStack {
+            Color.black.opacity(0.45)
+                .clipShape(RoundedRectangle(cornerRadius: DeckMetrics.bezelCorner,
+                                            style: .continuous))
+                .onTapGesture(perform: close)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("KEY \(slot + 1) SHOWS")
+                    .font(.system(size: 10, weight: .heavy))
+                    .tracking(1.5)
+                    .foregroundStyle(.white.opacity(0.5))
+                    .padding(.bottom, 8)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(KeyAssignment.allCases) { option in
+                            let selected = model.keyAssignments.indices.contains(slot)
+                                && model.keyAssignments[slot] == option
+                            HStack {
+                                Text(option.displayName)
+                                    .font(.system(size: 12, weight: selected ? .bold : .medium))
+                                    .foregroundStyle(.white.opacity(selected ? 0.95 : 0.7))
+                                Spacer()
+                                if selected {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundStyle(DeckColor.green)
+                                }
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(.white.opacity(selected ? 0.1 : 0))
+                            )
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                model.assign(option, toSlot: slot)
+                                close()
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: 240)
+            }
+            .padding(14)
+            .frame(width: 250)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(white: 0.09))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(.white.opacity(0.1), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
+            )
+            .transition(.scale(scale: 0.92).combined(with: .opacity))
         }
     }
 
@@ -137,15 +314,19 @@ struct DeckView: View {
 
 // MARK: - Key chrome
 
-/// One physical key: colored card face, glass highlight, breathing press physics.
+/// One physical key: colored card face, glass highlight, breathing press
+/// physics. Click fires `action`; holding ≥ 0.45 s fires `longPressAction`
+/// on release (choose what the key displays).
 struct KeyView<Content: View>: View {
     var background: Color
     var appearDelay: Double
     var show: Bool
     var action: () -> Void
+    var longPressAction: () -> Void = {}
     @ViewBuilder var content: Content
 
     @GestureState private var isPressed = false
+    @State private var pressBegan: Date?
 
     var body: some View {
         ZStack {
@@ -173,7 +354,14 @@ struct KeyView<Content: View>: View {
         .gesture(
             DragGesture(minimumDistance: 0)
                 .updating($isPressed) { _, state, _ in state = true }
-                .onEnded { _ in action() }
+                .onChanged { _ in
+                    if pressBegan == nil { pressBegan = Date() }
+                }
+                .onEnded { _ in
+                    let wasLong = pressBegan.map { Date().timeIntervalSince($0) >= 0.45 } ?? false
+                    pressBegan = nil
+                    wasLong ? longPressAction() : action()
+                }
         )
         .staggered(show: show, delay: appearDelay)
     }
@@ -277,6 +465,27 @@ struct AllAgentsKeyContent: View {
 
 struct UsageKeyContent: View {
     let usage: ProviderUsage
+    /// Show the unused remainder ("83% · 7d left") instead of consumption.
+    var showRemaining = false
+
+    private var displayValue: String {
+        guard showRemaining, case .percent(let fraction, _) = usage.kind else {
+            return usage.bigValue
+        }
+        return "\(Int(((1 - fraction) * 100).rounded()))%"
+    }
+
+    private var displayCaption: String {
+        guard showRemaining, case .percent(_, let window) = usage.kind else {
+            return usage.caption
+        }
+        return "\(window) left"
+    }
+
+    private var displayBarFraction: Double? {
+        guard let fraction = usage.barFraction else { return nil }
+        return showRemaining ? 1 - fraction : fraction
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -294,7 +503,7 @@ struct UsageKeyContent: View {
 
             Spacer(minLength: 0)
 
-            Text(usage.bigValue)
+            Text(displayValue)
                 .font(.system(size: 24, weight: .heavy))
                 .monospacedDigit()
                 .foregroundStyle(usage.tint)
@@ -303,7 +512,7 @@ struct UsageKeyContent: View {
 
             Spacer(minLength: 0)
 
-            if let fraction = usage.barFraction {
+            if let fraction = displayBarFraction {
                 Capsule()
                     .fill(.white.opacity(0.15))
                     .frame(width: 62, height: 4)
@@ -319,13 +528,29 @@ struct UsageKeyContent: View {
                     .frame(width: 62, height: 4)
                     .padding(.bottom, 6)
             }
-            Text(usage.caption)
+            Text(displayCaption)
                 .font(.system(size: 8.5, weight: .semibold))
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(0.7))
                 .padding(.bottom, 10)
         }
         .padding(.horizontal, 6)
+    }
+}
+
+struct ClockKeyContent: View {
+    let now: Date
+
+    var body: some View {
+        VStack(spacing: 5) {
+            Text(now, format: .dateTime.hour(.twoDigits(amPM: .omitted)).minute())
+                .font(.system(size: 22, weight: .heavy))
+                .monospacedDigit()
+                .foregroundStyle(.white.opacity(0.92))
+            Text(now, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated))
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(.white.opacity(0.45))
+        }
     }
 }
 
@@ -405,9 +630,13 @@ struct InfoBarView: View {
                 Text(agent.name)
                     .font(.system(size: 14, weight: .heavy))
                     .foregroundStyle(.white.opacity(0.95))
+                    .lineLimit(1)
+                    .layoutPriority(1)
                 Text(agent.status.label)
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(agent.status.tint)
+                    .lineLimit(1)
+                    .layoutPriority(1)
                 Spacer(minLength: 8)
                 if agent.status == .working, let start = agent.startedAt {
                     Text(DeckModel.elapsed(since: start, now: model.now))
@@ -429,23 +658,36 @@ struct InfoBarView: View {
                 Text(entry.name)
                     .font(.system(size: 14, weight: .heavy))
                     .foregroundStyle(.white.opacity(0.95))
+                    .lineLimit(1)
+                    .layoutPriority(1)
                 Text(entry.bigValue)
                     .font(.system(size: 14, weight: .heavy))
                     .monospacedDigit()
                     .foregroundStyle(entry.tint)
+                    .lineLimit(1)
+                    .layoutPriority(1)
                 Text(entry.caption)
                     .font(.system(size: 11, weight: .semibold))
                     .monospacedDigit()
                     .foregroundStyle(.white.opacity(0.6))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                if let secondary = entry.secondaryText {
+                    Text(secondary)
+                        .font(.system(size: 11, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(.white.opacity(0.4))
+                        .lineLimit(1)
+                }
                 Spacer(minLength: 8)
                 if let fraction = entry.barFraction {
                     Capsule()
                         .fill(.white.opacity(0.15))
-                        .frame(width: 70, height: 4)
+                        .frame(width: 54, height: 4)
                         .overlay(alignment: .leading) {
                             Capsule()
                                 .fill(entry.tint)
-                                .frame(width: 70 * fraction)
+                                .frame(width: 54 * fraction)
                         }
                 }
             }
@@ -471,6 +713,137 @@ struct CountUnit: View {
                 .lineLimit(1)
                 .fixedSize()
         }
+    }
+}
+
+/// Borderless gear in the bezel corner opening the settings card.
+struct GearButton: View {
+    let action: () -> Void
+
+    @GestureState private var isPressed = false
+
+    var body: some View {
+        Image(systemName: "gearshape.fill")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.white.opacity(isPressed ? 0.85 : 0.28))
+            .frame(width: 30, height: 30)
+            .contentShape(Circle())
+            .scaleEffect(isPressed ? 0.88 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: isPressed)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .updating($isPressed) { _, state, _ in state = true }
+                    .onEnded { _ in action() }
+            )
+    }
+}
+
+/// Settings card: online access toggle + Quit. More (launch at login,
+/// opacity, providers) arrives with Phase 4.
+struct SettingsCard: View {
+    @Bindable var settings: AppSettings
+    let onClose: () -> Void
+    let onQuit: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("AGINOL")
+                        .font(.system(size: 13, weight: .heavy))
+                        .foregroundStyle(.white.opacity(0.95))
+                    Text("Agentic Information Overlay")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.45))
+                }
+                Spacer()
+                CardButton(systemImage: "xmark", action: onClose)
+            }
+            .padding(.bottom, 12)
+
+            HairlineSeparator()
+
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle(isOn: $settings.onlineAccess) {
+                    Text("Online plan limits")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                }
+                .toggleStyle(.switch)
+                .controlSize(.mini)
+                .tint(DeckColor.green)
+                Text("Fetch Claude/Codex limits with the CLIs' own credentials. May show a one-time Keychain prompt. Off = fully local.")
+                    .font(.system(size: 8.5, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.4))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.vertical, 12)
+
+            HairlineSeparator()
+
+            Text("Long-press any key to choose what it displays")
+                .font(.system(size: 8.5, weight: .medium))
+                .foregroundStyle(.white.opacity(0.4))
+                .padding(.vertical, 12)
+
+            HairlineSeparator()
+
+            HStack(spacing: 10) {
+                Image(systemName: "power")
+                    .font(.system(size: 11, weight: .semibold))
+                Text("Quit AgInOl")
+                    .font(.system(size: 12, weight: .semibold))
+                Spacer()
+            }
+            .foregroundStyle(Color(red: 1.00, green: 0.42, blue: 0.38))
+            .padding(.top, 12)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onQuit)
+        }
+        .padding(16)
+        .frame(width: 250)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(white: 0.09))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(.white.opacity(0.1), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
+        )
+    }
+}
+
+/// Small circular ghost button used inside the settings card.
+struct CardButton: View {
+    let systemImage: String
+    let action: () -> Void
+
+    @GestureState private var isPressed = false
+
+    var body: some View {
+        Image(systemName: systemImage)
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(.white.opacity(isPressed ? 0.9 : 0.45))
+            .frame(width: 24, height: 24)
+            .background(Circle().fill(.white.opacity(0.08)))
+            .contentShape(Circle())
+            .scaleEffect(isPressed ? 0.88 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: isPressed)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .updating($isPressed) { _, state, _ in state = true }
+                    .onEnded { _ in action() }
+            )
+    }
+}
+
+/// Sub-pixel hairline that adapts to the dark card.
+struct HairlineSeparator: View {
+    var body: some View {
+        Rectangle()
+            .fill(.white.opacity(0.12))
+            .frame(height: 0.33)
     }
 }
 
@@ -515,7 +888,7 @@ extension View {
 }
 
 #Preview {
-    DeckView(model: .demo())
+    DeckView(model: .demo(), controller: PanelController())
         .padding(40)
         .background(.blue.opacity(0.2))
 }
