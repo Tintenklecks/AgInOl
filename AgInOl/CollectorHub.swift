@@ -125,6 +125,9 @@ final class CollectorHub {
                 models: models.prefix(3).map(ModelName.short)
             ))
             usage.append(Self.usageTile(providerID: id, name: collector.displayName, report: report))
+            if let sessionTile = Self.sessionUsageTile(providerID: id, name: collector.displayName, report: report) {
+                usage.append(sessionTile)
+            }
             if id == "claude", let spend = report.spend, spend.tokens7d > 0 {
                 var tile = ProviderUsage(
                     id: "claude-spend", name: collector.displayName,
@@ -213,6 +216,30 @@ final class CollectorHub {
                                  kind: .tokens(count: tokens,
                                                cost: report.usage.costUSD ?? 0,
                                                window: "7d"))
+        }
+    }
+
+    private static func sessionUsageTile(providerID: String, name: String, report: ProviderReport) -> ProviderUsage? {
+        guard report.installed else { return nil }
+        let windows = report.usage.windows
+
+        switch providerID {
+        case "claude":
+            guard let session = windows.first(where: { $0.label == "5h" }),
+                  let percent = session.percent else { return nil }
+            return ProviderUsage(id: "claude-session", name: name,
+                                 tint: DeckColor.orange, tileBackground: DeckColor.brownTile,
+                                 kind: .percent(fraction: percent, window: "5h"))
+
+        case "codex":
+            let sorted = windows.sorted { ($0.periodSeconds ?? 0) < ($1.periodSeconds ?? 0) }
+            guard let session = sorted.first, let percent = session.percent else { return nil }
+            return ProviderUsage(id: "codex-session", name: name,
+                                 tint: DeckColor.cyan, tileBackground: DeckColor.blueTile,
+                                 kind: .percent(fraction: percent, window: session.label))
+
+        default:
+            return nil
         }
     }
 }

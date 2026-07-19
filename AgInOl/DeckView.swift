@@ -187,6 +187,10 @@ struct DeckView: View {
         case .claudeUsed, .claudeLeft, .codexUsed, .codexLeft, .opencodeUsage, .kimiUsage:
             model.usageEntry(forProvider: assignment.providerID!)?.tileBackground
                 ?? DeckColor.grayTile
+        case .claudeSessionUsed, .claudeSessionLeft:
+            model.usageEntry(withID: "claude-session")?.tileBackground ?? DeckColor.grayTile
+        case .codexSessionUsed, .codexSessionLeft:
+            model.usageEntry(withID: "codex-session")?.tileBackground ?? DeckColor.grayTile
         case .claudeSpend:
             model.usageEntry(withID: "claude-spend")?.tileBackground ?? DeckColor.grayTile
         case .info, .clock:
@@ -209,6 +213,22 @@ struct DeckView: View {
             }
         case .claudeLeft, .codexLeft:
             if let entry = model.usageEntry(forProvider: assignment.providerID!) {
+                UsageKeyContent(usage: entry, showRemaining: true)
+            }
+        case .claudeSessionUsed:
+            if let entry = model.usageEntry(withID: "claude-session") {
+                UsageKeyContent(usage: entry)
+            }
+        case .claudeSessionLeft:
+            if let entry = model.usageEntry(withID: "claude-session") {
+                UsageKeyContent(usage: entry, showRemaining: true)
+            }
+        case .codexSessionUsed:
+            if let entry = model.usageEntry(withID: "codex-session") {
+                UsageKeyContent(usage: entry)
+            }
+        case .codexSessionLeft:
+            if let entry = model.usageEntry(withID: "codex-session") {
                 UsageKeyContent(usage: entry, showRemaining: true)
             }
         case .claudeSpend:
@@ -241,11 +261,18 @@ struct DeckView: View {
                 model.showSummaryPage()
                 showAgentList = true
             case .claudeUsed, .claudeLeft, .codexUsed, .codexLeft, .opencodeUsage, .kimiUsage:
-                // A tile blocked by the online setting invites enabling it.
                 if let entry = model.usageEntry(forProvider: assignment.providerID!),
                    case .unavailable(let caption) = entry.kind, caption == "online off" {
                     showOnlinePrompt = true
                 } else if let page = model.pageIndex(forUsageProvider: assignment.providerID!) {
+                    model.infoPageIndex = page
+                }
+            case .claudeSessionUsed, .claudeSessionLeft:
+                if let page = model.pageIndex(forUsageID: "claude-session") {
+                    model.infoPageIndex = page
+                }
+            case .codexSessionUsed, .codexSessionLeft:
+                if let page = model.pageIndex(forUsageID: "codex-session") {
                     model.infoPageIndex = page
                 }
             case .claudeSpend:
@@ -273,9 +300,9 @@ struct DeckView: View {
     private static let generalOptions: [KeyAssignment] = [.allAgents, .info, .clock]
     private static let pickerProviders: [PickerProvider] = [
         PickerProvider(id: "claude", name: "Claude",
-                       options: [.claudeStatus, .claudeUsed, .claudeLeft, .claudeSpend]),
+                       options: [.claudeStatus, .claudeUsed, .claudeLeft, .claudeSessionUsed, .claudeSessionLeft, .claudeSpend]),
         PickerProvider(id: "codex", name: "Codex",
-                       options: [.codexStatus, .codexUsed, .codexLeft]),
+                       options: [.codexStatus, .codexUsed, .codexLeft, .codexSessionUsed, .codexSessionLeft]),
         PickerProvider(id: "opencode", name: "OpenCode",
                        options: [.opencodeStatus, .opencodeUsage]),
         PickerProvider(id: "kimi", name: "Kimi",

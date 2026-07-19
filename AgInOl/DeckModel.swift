@@ -157,7 +157,9 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
     case claudeStatus, codexStatus, opencodeStatus, kimiStatus
     case allAgents
     case claudeUsed, claudeLeft, claudeSpend
+    case claudeSessionUsed, claudeSessionLeft
     case codexUsed, codexLeft
+    case codexSessionUsed, codexSessionLeft
     case opencodeUsage, kimiUsage
     case info, clock
 
@@ -173,8 +175,12 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
         case .claudeUsed:     "Claude · % used"
         case .claudeLeft:     "Claude · % left"
         case .claudeSpend:    "Claude · tokens & cost"
+        case .claudeSessionUsed: "Claude · % used session"
+        case .claudeSessionLeft: "Claude · % left session"
         case .codexUsed:      "Codex · % used"
         case .codexLeft:      "Codex · % left"
+        case .codexSessionUsed: "Codex · % used session"
+        case .codexSessionLeft: "Codex · % left session"
         case .opencodeUsage:  "OpenCode · tokens"
         case .kimiUsage:      "Kimi · tokens"
         case .info:           "Info pages"
@@ -188,6 +194,8 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
         case .claudeStatus, .codexStatus, .opencodeStatus, .kimiStatus: "Status"
         case .claudeUsed, .codexUsed:                      "% used"
         case .claudeLeft, .codexLeft:                      "% left"
+        case .claudeSessionUsed, .codexSessionUsed:        "% used session"
+        case .claudeSessionLeft, .codexSessionLeft:        "% left session"
         case .claudeSpend, .opencodeUsage, .kimiUsage:     "Tokens & cost"
         case .allAgents:                                   "All agents"
         case .info:                                        "Info pages"
@@ -198,8 +206,10 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
     /// Provider backing this assignment, if any.
     var providerID: String? {
         switch self {
-        case .claudeStatus, .claudeUsed, .claudeLeft, .claudeSpend: "claude"
-        case .codexStatus, .codexUsed, .codexLeft:         "codex"
+        case .claudeStatus, .claudeUsed, .claudeLeft, .claudeSpend,
+             .claudeSessionUsed, .claudeSessionLeft: "claude"
+        case .codexStatus, .codexUsed, .codexLeft,
+             .codexSessionUsed, .codexSessionLeft:   "codex"
         case .opencodeStatus, .opencodeUsage:              "opencode"
         case .kimiStatus, .kimiUsage:                      "kimi"
         case .allAgents, .info, .clock:                    nil
@@ -362,7 +372,11 @@ final class DeckModel {
             usage: [
                 ProviderUsage(id: "claude-usage", name: "CLAUDE", tint: DeckColor.gray,
                               tileBackground: DeckColor.grayTile, kind: .unavailable(caption: "loading")),
+                ProviderUsage(id: "claude-session", name: "CLAUDE", tint: DeckColor.gray,
+                              tileBackground: DeckColor.grayTile, kind: .unavailable(caption: "loading")),
                 ProviderUsage(id: "codex-usage", name: "CODEX", tint: DeckColor.gray,
+                              tileBackground: DeckColor.grayTile, kind: .unavailable(caption: "loading")),
+                ProviderUsage(id: "codex-session", name: "CODEX", tint: DeckColor.gray,
                               tileBackground: DeckColor.grayTile, kind: .unavailable(caption: "loading")),
                 ProviderUsage(id: "opencode-usage", name: "OPENCODE", tint: DeckColor.gray,
                               tileBackground: DeckColor.grayTile, kind: .unavailable(caption: "loading")),
@@ -416,9 +430,15 @@ final class DeckModel {
                 ProviderUsage(id: "claude-usage", name: "CLAUDE",
                               tint: DeckColor.orange, tileBackground: DeckColor.brownTile,
                               kind: .percent(fraction: 0.34, window: "7d")),
+                ProviderUsage(id: "claude-session", name: "CLAUDE",
+                              tint: DeckColor.orange, tileBackground: DeckColor.brownTile,
+                              kind: .percent(fraction: 0.42, window: "5h")),
                 ProviderUsage(id: "codex-usage", name: "CODEX",
                               tint: DeckColor.cyan, tileBackground: DeckColor.blueTile,
                               kind: .percent(fraction: 0.25, window: "1w")),
+                ProviderUsage(id: "codex-session", name: "CODEX",
+                              tint: DeckColor.cyan, tileBackground: DeckColor.blueTile,
+                              kind: .percent(fraction: 0.15, window: "5h")),
                 ProviderUsage(id: "opencode-usage", name: "OPENCODE",
                               tint: DeckColor.purple, tileBackground: DeckColor.purpleTile,
                               kind: .tokens(count: 5_180_000, cost: 3.84, window: "7d")),
