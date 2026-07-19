@@ -179,12 +179,12 @@ struct DeckView: View {
 
     private func keyBackground(for assignment: KeyAssignment) -> Color {
         switch assignment {
-        case .claudeStatus, .codexStatus, .opencodeStatus:
+        case .claudeStatus, .codexStatus, .opencodeStatus, .kimiStatus:
             model.agent(withID: assignment.providerID!)?.status.tileBackground
                 ?? DeckColor.grayTile
         case .allAgents:
             DeckColor.oliveTile
-        case .claudeUsed, .claudeLeft, .codexUsed, .codexLeft, .opencodeUsage:
+        case .claudeUsed, .claudeLeft, .codexUsed, .codexLeft, .opencodeUsage, .kimiUsage:
             model.usageEntry(forProvider: assignment.providerID!)?.tileBackground
                 ?? DeckColor.grayTile
         case .claudeSpend:
@@ -197,13 +197,13 @@ struct DeckView: View {
     @ViewBuilder
     private func keyContent(for assignment: KeyAssignment) -> some View {
         switch assignment {
-        case .claudeStatus, .codexStatus, .opencodeStatus:
+        case .claudeStatus, .codexStatus, .opencodeStatus, .kimiStatus:
             if let agent = model.agent(withID: assignment.providerID!) {
                 AgentKeyContent(agent: agent)
             }
         case .allAgents:
             AllAgentsKeyContent(model: model)
-        case .claudeUsed, .codexUsed, .opencodeUsage:
+        case .claudeUsed, .codexUsed, .opencodeUsage, .kimiUsage:
             if let entry = model.usageEntry(forProvider: assignment.providerID!) {
                 UsageKeyContent(usage: entry)
             }
@@ -230,7 +230,7 @@ struct DeckView: View {
     private func keyAction(for assignment: KeyAssignment) {
         withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
             switch assignment {
-            case .claudeStatus, .codexStatus, .opencodeStatus:
+            case .claudeStatus, .codexStatus, .opencodeStatus, .kimiStatus:
                 if let agent = model.agent(withID: assignment.providerID!) {
                     model.acknowledge(agent)
                     if let page = model.pageIndex(forAgent: agent.id) {
@@ -240,7 +240,7 @@ struct DeckView: View {
             case .allAgents:
                 model.showSummaryPage()
                 showAgentList = true
-            case .claudeUsed, .claudeLeft, .codexUsed, .codexLeft, .opencodeUsage:
+            case .claudeUsed, .claudeLeft, .codexUsed, .codexLeft, .opencodeUsage, .kimiUsage:
                 // A tile blocked by the online setting invites enabling it.
                 if let entry = model.usageEntry(forProvider: assignment.providerID!),
                    case .unavailable(let caption) = entry.kind, caption == "online off" {
@@ -278,6 +278,8 @@ struct DeckView: View {
                        options: [.codexStatus, .codexUsed, .codexLeft]),
         PickerProvider(id: "opencode", name: "OpenCode",
                        options: [.opencodeStatus, .opencodeUsage]),
+        PickerProvider(id: "kimi", name: "Kimi",
+                       options: [.kimiStatus, .kimiUsage]),
     ]
 
     private func keyPickerOverlay(slot: Int) -> some View {

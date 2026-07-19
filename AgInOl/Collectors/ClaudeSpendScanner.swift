@@ -60,16 +60,14 @@ nonisolated final class ClaudeSpendScanner: @unchecked Sendable {
             }
         }
 
-        lock.lock()
-        cache = cache.filter { livePaths.contains($0.key) }
-        lock.unlock()
+        lock.withLock {
+            cache = cache.filter { livePaths.contains($0.key) }
+        }
         return snapshot
     }
 
     private func aggregate(for file: FileStamp) -> FileAggregate {
-        lock.lock()
-        let cached = cache[file.path]
-        lock.unlock()
+        let cached = lock.withLock { cache[file.path] }
         if let cached, cached.size == file.size, cached.mtime == file.mtime {
             return cached
         }
@@ -115,9 +113,9 @@ nonisolated final class ClaudeSpendScanner: @unchecked Sendable {
         }
 
         let aggregate = FileAggregate(size: file.size, mtime: file.mtime, buckets: buckets)
-        lock.lock()
-        cache[file.path] = aggregate
-        lock.unlock()
+        lock.withLock {
+            cache[file.path] = aggregate
+        }
         return aggregate
     }
 

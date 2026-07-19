@@ -3,7 +3,7 @@
 //  AgInOl
 //
 //  Demo-data model for Phase 1. Phase 2 replaces the demo seed with
-//  live collectors (~/.claude, ~/.codex, OpenCode SQLite).
+//  live collectors (~/.claude, ~/.codex, OpenCode SQLite, ~/.kimi-code).
 //
 
 import SwiftUI
@@ -17,6 +17,7 @@ enum DeckColor {
     static let orange = Color(red: 1.00, green: 0.62, blue: 0.26)
     static let cyan   = Color(red: 0.35, green: 0.78, blue: 0.98)
     static let purple = Color(red: 0.72, green: 0.60, blue: 0.99)
+    static let magenta = Color(red: 0.95, green: 0.35, blue: 0.65)
     static let gray   = Color(white: 0.62)
 
     // Tile card backgrounds
@@ -27,6 +28,7 @@ enum DeckColor {
     static let brownTile  = Color(red: 0.25, green: 0.13, blue: 0.06)
     static let blueTile   = Color(red: 0.06, green: 0.15, blue: 0.25)
     static let purpleTile = Color(red: 0.15, green: 0.11, blue: 0.27)
+    static let magentaTile = Color(red: 0.28, green: 0.08, blue: 0.16)
     static let indigoTile = Color(red: 0.18, green: 0.13, blue: 0.30)
 
     static let screen = Color(red: 0.05, green: 0.055, blue: 0.07)
@@ -152,11 +154,11 @@ struct ProviderUsage: Identifiable {
 
 /// What one of the 8 physical keys displays. Chosen per key via long-press.
 enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
-    case claudeStatus, codexStatus, opencodeStatus
+    case claudeStatus, codexStatus, opencodeStatus, kimiStatus
     case allAgents
     case claudeUsed, claudeLeft, claudeSpend
     case codexUsed, codexLeft
-    case opencodeUsage
+    case opencodeUsage, kimiUsage
     case info, clock
 
     var id: String { rawValue }
@@ -166,6 +168,7 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
         case .claudeStatus:   "Claude · status"
         case .codexStatus:    "Codex · status"
         case .opencodeStatus: "OpenCode · status"
+        case .kimiStatus:     "Kimi · status"
         case .allAgents:      "All agents"
         case .claudeUsed:     "Claude · % used"
         case .claudeLeft:     "Claude · % left"
@@ -173,6 +176,7 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
         case .codexUsed:      "Codex · % used"
         case .codexLeft:      "Codex · % left"
         case .opencodeUsage:  "OpenCode · tokens"
+        case .kimiUsage:      "Kimi · tokens"
         case .info:           "Info pages"
         case .clock:          "Clock"
         }
@@ -181,10 +185,10 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
     /// Short label for the per-provider layer of the key picker.
     var metricLabel: String {
         switch self {
-        case .claudeStatus, .codexStatus, .opencodeStatus: "Status"
+        case .claudeStatus, .codexStatus, .opencodeStatus, .kimiStatus: "Status"
         case .claudeUsed, .codexUsed:                      "% used"
         case .claudeLeft, .codexLeft:                      "% left"
-        case .claudeSpend, .opencodeUsage:                 "Tokens & cost"
+        case .claudeSpend, .opencodeUsage, .kimiUsage:     "Tokens & cost"
         case .allAgents:                                   "All agents"
         case .info:                                        "Info pages"
         case .clock:                                       "Clock"
@@ -197,13 +201,14 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
         case .claudeStatus, .claudeUsed, .claudeLeft, .claudeSpend: "claude"
         case .codexStatus, .codexUsed, .codexLeft:         "codex"
         case .opencodeStatus, .opencodeUsage:              "opencode"
+        case .kimiStatus, .kimiUsage:                      "kimi"
         case .allAgents, .info, .clock:                    nil
         }
     }
 
     static let defaultLayout: [KeyAssignment] = [
-        .claudeStatus, .codexStatus, .opencodeStatus, .allAgents,
-        .claudeUsed, .codexUsed, .opencodeUsage, .info,
+        .claudeStatus, .codexStatus, .opencodeStatus, .kimiStatus,
+        .claudeUsed, .codexUsed, .opencodeUsage, .kimiUsage,
     ]
 }
 
@@ -352,6 +357,7 @@ final class DeckModel {
                 Agent(id: "claude", name: "CLAUDE", status: .idle, sessions: 0, startedAt: nil),
                 Agent(id: "codex", name: "CODEX", status: .idle, sessions: 0, startedAt: nil),
                 Agent(id: "opencode", name: "OPENCODE", status: .idle, sessions: 0, startedAt: nil),
+                Agent(id: "kimi", name: "KIMI", status: .idle, sessions: 0, startedAt: nil),
             ],
             usage: [
                 ProviderUsage(id: "claude-usage", name: "CLAUDE", tint: DeckColor.gray,
@@ -359,6 +365,8 @@ final class DeckModel {
                 ProviderUsage(id: "codex-usage", name: "CODEX", tint: DeckColor.gray,
                               tileBackground: DeckColor.grayTile, kind: .unavailable(caption: "loading")),
                 ProviderUsage(id: "opencode-usage", name: "OPENCODE", tint: DeckColor.gray,
+                              tileBackground: DeckColor.grayTile, kind: .unavailable(caption: "loading")),
+                ProviderUsage(id: "kimi-usage", name: "KIMI", tint: DeckColor.gray,
                               tileBackground: DeckColor.grayTile, kind: .unavailable(caption: "loading")),
             ]
         )
@@ -401,6 +409,8 @@ final class DeckModel {
                       startedAt: Date().addingTimeInterval(-3120)),
                 Agent(id: "opencode", name: "OPENCODE", status: .idle, sessions: 1,
                       startedAt: nil),
+                Agent(id: "kimi", name: "KIMI", status: .working, sessions: 1,
+                      startedAt: Date().addingTimeInterval(-210)),
             ],
             usage: [
                 ProviderUsage(id: "claude-usage", name: "CLAUDE",
@@ -412,6 +422,9 @@ final class DeckModel {
                 ProviderUsage(id: "opencode-usage", name: "OPENCODE",
                               tint: DeckColor.purple, tileBackground: DeckColor.purpleTile,
                               kind: .tokens(count: 5_180_000, cost: 3.84, window: "7d")),
+                ProviderUsage(id: "kimi-usage", name: "KIMI",
+                              tint: DeckColor.magenta, tileBackground: DeckColor.magentaTile,
+                              kind: .tokens(count: 1_240_000, cost: 0, window: "7d")),
             ]
         )
     }

@@ -39,13 +39,13 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
         }
 
         let now = Date()
-        lock.lock()
-        if files.isEmpty || now.timeIntervalSince(scannedAt) > 30 {
-            files = CollectorFiles.listJSONL(in: sessionsDirectory)
-            scannedAt = now
+        let recent = lock.withLock {
+            if files.isEmpty || now.timeIntervalSince(scannedAt) > 30 {
+                files = CollectorFiles.listJSONL(in: sessionsDirectory)
+                scannedAt = now
+            }
+            return files.sorted { $0.mtime > $1.mtime }.prefix(40)
         }
-        let recent = files.sorted { $0.mtime > $1.mtime }.prefix(40)
-        lock.unlock()
 
         var sessions: [SessionSnapshot] = []
         var rateLimits: [String: Any]?
@@ -76,26 +76,25 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
             if rateLimits == nil, let limits = info.rateLimits { rateLimits = limits }
         }
 
-        lock.lock()
-        if let rateLimits {
-            usage = Self.usageFrom(rateLimits: rateLimits)
-        } else if usage.updatedAt == nil {
-            usage = UsageSnapshot(updatedAt: now, error: "No Codex usage event found")
+        let needsLive = lock.withLock {
+            if let rateLimits {
+                usage = Self.usageFrom(rateLimits: rateLimits)
+            } else if usage.updatedAt == nil {
+                usage = UsageSnapshot(updatedAt: now, error: "No Codex usage event found")
+            }
+            let needs = context.allowNetwork && now.timeIntervalSince(liveFetchedAt) > 300
+            if needs { liveFetchedAt = now }
+            if !context.allowNetwork { liveUsage = nil }   // fall back to local logs
+            return needs
         }
-        let needsLive = context.allowNetwork && now.timeIntervalSince(liveFetchedAt) > 300
-        if needsLive { liveFetchedAt = now }
-        if !context.allowNetwork { liveUsage = nil }   // fall back to local logs
-        lock.unlock()
 
         if needsLive {
             await fetchLiveUsage()
         }
 
-        lock.lock()
         // Live endpoint data beats point-in-time log data (logs freeze at
         // the last local Codex session and miss usage from other surfaces).
-        let currentUsage = liveUsage ?? usage
-        lock.unlock()
+        let currentUsage = lock.withLock { liveUsage ?? usage }
 
         return ProviderReport(installed: true, sessions: sessions, usage: currentUsage)
     }
@@ -110,9 +109,7 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
     }
 
     private func tailInfo(for file: FileStamp) -> Tail {
-        lock.lock()
-        let cached = tailCache[file.path]
-        lock.unlock()
+        let cached = lock.withLock { tailCache[file.path] }
         if let cached, cached.size == file.size, cached.mtime == file.mtime {
             return cached.info
         }
@@ -130,10 +127,10 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
             if info.rateLimits == nil { info.rateLimits = cached.info.rateLimits }
             if info.model == nil { info.model = cached.info.model }
         }
-        lock.lock()
-        tailCache[file.path] = (file.size, file.mtime, info)
-        if tailCache.count > 128 { tailCache.removeAll() }
-        lock.unlock()
+        lock.withLock {
+            tailCache[file.path] = (file.size, file.mtime, info)
+            if tailCache.count > 128 { tailCache.removeAll() }
+        }
         return info
     }
 
@@ -226,9 +223,9 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
         }
         guard !windows.isEmpty else { return }
 
-        lock.lock()
-        liveUsage = UsageSnapshot(windows: windows, updatedAt: Date())
-        lock.unlock()
+        lock.withLock {
+            liveUsage = UsageSnapshot(windows: windows, updatedAt: Date())
+        }
     }
 
     /// exp claim of a JWT, or nil if unreadable.

@@ -16,6 +16,7 @@ final class CollectorHub {
         ClaudeCollector(),
         CodexCollector(),
         OpenCodeCollector(),
+        KimiCodeCollector(),
     ]
 
     private let attentionSince = Date()
@@ -146,6 +147,7 @@ final class CollectorHub {
         let (tint, tile): (Color, Color) = switch providerID {
         case "claude": (DeckColor.orange, DeckColor.brownTile)
         case "codex": (DeckColor.cyan, DeckColor.blueTile)
+        case "kimi": (DeckColor.magenta, DeckColor.magentaTile)
         default: (DeckColor.purple, DeckColor.purpleTile)
         }
 
@@ -187,6 +189,18 @@ final class CollectorHub {
                                           kind: .percent(fraction: percent, window: main.label))
             if sorted.count > 1, let p = sorted[1].percent {
                 tileModel.secondaryText = "\(sorted[1].label) \(Int((p * 100).rounded()))%"
+            }
+            return tileModel
+
+        case "kimi":
+            guard let week = windows.first(where: { $0.label == "7d" }), let tokens = week.tokens else {
+                return unavailable(report.usage.error == nil ? "loading" : "no data")
+            }
+            var tileModel = ProviderUsage(id: "kimi-usage", name: name, tint: tint,
+                                          tileBackground: tile,
+                                          kind: .tokens(count: tokens, cost: 0, window: "7d"))
+            if let day = windows.first(where: { $0.label == "24h" }), let t = day.tokens {
+                tileModel.secondaryText = String(format: "24h %.1fK", t / 1000)
             }
             return tileModel
 

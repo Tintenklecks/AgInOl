@@ -40,21 +40,21 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
         }
 
         let now = Date()
-        lock.lock()
-        if projectFiles.isEmpty || now.timeIntervalSince(projectsScannedAt) > 30 {
-            projectFiles = CollectorFiles.listJSONL(in: configDirectory + "/projects")
-            projectsScannedAt = now
+        let (projects, needsUsage) = lock.withLock {
+            if projectFiles.isEmpty || now.timeIntervalSince(projectsScannedAt) > 30 {
+                projectFiles = CollectorFiles.listJSONL(in: configDirectory + "/projects")
+                projectsScannedAt = now
+            }
+            let needs = context.allowNetwork && now.timeIntervalSince(usageFetchedAt) > 300
+            if needs { usageFetchedAt = now }
+            if !context.allowNetwork {
+                // Claude's plan limits only exist server-side; without online
+                // access there is nothing to show (and no Keychain access).
+                usage = UsageSnapshot(updatedAt: now, error: "online access disabled")
+                usageFetchedAt = .distantPast
+            }
+            return (projectFiles, needs)
         }
-        let projects = projectFiles
-        let needsUsage = context.allowNetwork && now.timeIntervalSince(usageFetchedAt) > 300
-        if needsUsage { usageFetchedAt = now }
-        if !context.allowNetwork {
-            // Claude's plan limits only exist server-side; without online
-            // access there is nothing to show (and no Keychain access).
-            usage = UsageSnapshot(updatedAt: now, error: "online access disabled")
-            usageFetchedAt = .distantPast
-        }
-        lock.unlock()
 
         if needsUsage {
             await fetchUsage()
@@ -62,21 +62,19 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
 
         let sessions = readSessions(sessionsDir: sessionsDir, projects: projects, context: context)
 
-        lock.lock()
-        let needsSpend = now.timeIntervalSince(spendScannedAt) > 60
-        if needsSpend { spendScannedAt = now }
-        lock.unlock()
+        let needsSpend = lock.withLock {
+            let needs = now.timeIntervalSince(spendScannedAt) > 60
+            if needs { spendScannedAt = now }
+            return needs
+        }
         if needsSpend {
             let result = spendScanner.scan(files: projects)
-            lock.lock()
-            spend = result
-            lock.unlock()
+            lock.withLock { spend = result }
         }
 
-        lock.lock()
-        let currentUsage = usage
-        let currentSpend = spend
-        lock.unlock()
+        let (currentUsage, currentSpend) = lock.withLock {
+            (usage, spend)
+        }
         return ProviderReport(installed: true, sessions: sessions,
                               usage: currentUsage, spend: currentSpend)
     }
@@ -216,13 +214,9 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
                 .compactMap { $0 }
         } catch {
             result.error = error.localizedDescription
-            lock.lock()
-            result.windows = usage.windows   // keep serving stale data on failure
-            lock.unlock()
+            result.windows = lock.withLock { usage.windows }   // keep serving stale data on failure
         }
-        lock.lock()
-        usage = result
-        lock.unlock()
+        lock.withLock { usage = result }
     }
 
     /// Same resolution order as the Claude Code CLI's other consumers:
@@ -234,10 +228,7 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
     /// a rebuilt debug app would otherwise re-prompt on every build.
     /// The token is cached in memory; a 401 clears the cache.
     private func accessToken() throws -> String {
-        lock.lock()
-        let cached = cachedToken
-        lock.unlock()
-        if let cached { return cached }
+        if let cached = lock.withLock({ cachedToken }) { return cached }
 
         var token: String?
         if let env = ProcessInfo.processInfo.environment["CLAUDE_CODE_OAUTH_TOKEN"],
@@ -253,16 +244,12 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
             token = Self.extractToken(from: data)
         }
         guard let token else { throw CollectorError("Claude Code OAuth token not found") }
-        lock.lock()
-        cachedToken = token
-        lock.unlock()
+        lock.withLock { cachedToken = token }
         return token
     }
 
     func invalidateToken() {
-        lock.lock()
-        cachedToken = nil
-        lock.unlock()
+        lock.withLock { cachedToken = nil }
     }
 
     private func securityCLIPassword(service: String) -> Data? {
@@ -294,7 +281,7 @@ nonisolated struct CollectorError: Error, LocalizedError {
 }
 
 private extension String {
-    func contains(anyOf needles: [String]) -> Bool {
+    nonisolated func contains(anyOf needles: [String]) -> Bool {
         needles.contains { contains($0) }
     }
 }
