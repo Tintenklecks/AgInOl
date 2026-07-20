@@ -82,10 +82,10 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
             } else if usage.updatedAt == nil {
                 usage = UsageSnapshot(updatedAt: now, error: "No Codex usage event found")
             }
-            let needs = context.allowNetwork && now.timeIntervalSince(liveFetchedAt) > 300
-            if needs { liveFetchedAt = now }
+            let needsLive = context.allowNetwork && now.timeIntervalSince(liveFetchedAt) > 300
+            if needsLive { liveFetchedAt = now }
             if !context.allowNetwork { liveUsage = nil }   // fall back to local logs
-            return needs
+            return needsLive
         }
 
         if needsLive {
@@ -223,9 +223,7 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
         }
         guard !windows.isEmpty else { return }
 
-        lock.withLock {
-            liveUsage = UsageSnapshot(windows: windows, updatedAt: Date())
-        }
+        lock.withLock { liveUsage = UsageSnapshot(windows: windows, updatedAt: Date()) }
     }
 
     /// exp claim of a JWT, or nil if unreadable.

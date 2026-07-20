@@ -60,9 +60,7 @@ nonisolated final class ClaudeSpendScanner: @unchecked Sendable {
             }
         }
 
-        lock.withLock {
-            cache = cache.filter { livePaths.contains($0.key) }
-        }
+        lock.withLock { cache = cache.filter { livePaths.contains($0.key) } }
         return snapshot
     }
 
@@ -113,9 +111,7 @@ nonisolated final class ClaudeSpendScanner: @unchecked Sendable {
         }
 
         let aggregate = FileAggregate(size: file.size, mtime: file.mtime, buckets: buckets)
-        lock.withLock {
-            cache[file.path] = aggregate
-        }
+        lock.withLock { cache[file.path] = aggregate }
         return aggregate
     }
 

@@ -45,15 +45,15 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
                 projectFiles = CollectorFiles.listJSONL(in: configDirectory + "/projects")
                 projectsScannedAt = now
             }
-            let needs = context.allowNetwork && now.timeIntervalSince(usageFetchedAt) > 300
-            if needs { usageFetchedAt = now }
+            let needsUsage = context.allowNetwork && now.timeIntervalSince(usageFetchedAt) > 300
+            if needsUsage { usageFetchedAt = now }
             if !context.allowNetwork {
                 // Claude's plan limits only exist server-side; without online
                 // access there is nothing to show (and no Keychain access).
                 usage = UsageSnapshot(updatedAt: now, error: "online access disabled")
                 usageFetchedAt = .distantPast
             }
-            return (projectFiles, needs)
+            return (projectFiles, needsUsage)
         }
 
         if needsUsage {
@@ -63,18 +63,16 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
         let sessions = readSessions(sessionsDir: sessionsDir, projects: projects, context: context)
 
         let needsSpend = lock.withLock {
-            let needs = now.timeIntervalSince(spendScannedAt) > 60
-            if needs { spendScannedAt = now }
-            return needs
+            let needsSpend = now.timeIntervalSince(spendScannedAt) > 60
+            if needsSpend { spendScannedAt = now }
+            return needsSpend
         }
         if needsSpend {
             let result = spendScanner.scan(files: projects)
             lock.withLock { spend = result }
         }
 
-        let (currentUsage, currentSpend) = lock.withLock {
-            (usage, spend)
-        }
+        let (currentUsage, currentSpend) = lock.withLock { (usage, spend) }
         return ProviderReport(installed: true, sessions: sessions,
                               usage: currentUsage, spend: currentSpend)
     }
@@ -278,4 +276,10 @@ nonisolated struct CollectorError: Error, LocalizedError {
     let message: String
     init(_ message: String) { self.message = message }
     var errorDescription: String? { message }
+}
+
+nonisolated private extension String {
+    func contains(anyOf needles: [String]) -> Bool {
+        needles.contains { contains($0) }
+    }
 }
