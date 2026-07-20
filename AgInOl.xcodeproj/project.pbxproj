@@ -7,6 +7,20 @@
 	objects = {
 
 /* Begin PBXContainerItemProxy section */
+		8224F242300E875400AE6A93 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 825DB53F300BF0B800DC1644 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8224F234300E875200AE6A93;
+			remoteInfo = "AgInOl Companion";
+		};
+		8224F24C300E875400AE6A93 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 825DB53F300BF0B800DC1644 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8224F234300E875200AE6A93;
+			remoteInfo = "AgInOl Companion";
+		};
 		825DB557300BF0BA00DC1644 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 825DB53F300BF0B800DC1644 /* Project object */;
@@ -24,12 +38,30 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		8224F235300E875200AE6A93 /* AgInOl Companion.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "AgInOl Companion.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		8224F241300E875400AE6A93 /* AgInOl CompanionTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "AgInOl CompanionTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		8224F24B300E875400AE6A93 /* AgInOl CompanionUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "AgInOl CompanionUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		825DB547300BF0B800DC1644 /* AgInOl.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AgInOl.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		825DB556300BF0BA00DC1644 /* AgInOlTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AgInOlTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		825DB560300BF0BA00DC1644 /* AgInOlUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AgInOlUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		8224F236300E875300AE6A93 /* AgInOl Companion */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "AgInOl Companion";
+			sourceTree = "<group>";
+		};
+		8224F244300E875400AE6A93 /* AgInOl CompanionTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "AgInOl CompanionTests";
+			sourceTree = "<group>";
+		};
+		8224F24E300E875400AE6A93 /* AgInOl CompanionUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "AgInOl CompanionUITests";
+			sourceTree = "<group>";
+		};
 		825DB549300BF0B800DC1644 /* AgInOl */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = AgInOl;
@@ -48,6 +80,27 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		8224F232300E875200AE6A93 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8224F23E300E875400AE6A93 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8224F248300E875400AE6A93 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		825DB544300BF0B800DC1644 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -78,6 +131,9 @@
 				825DB549300BF0B800DC1644 /* AgInOl */,
 				825DB559300BF0BA00DC1644 /* AgInOlTests */,
 				825DB563300BF0BA00DC1644 /* AgInOlUITests */,
+				8224F236300E875300AE6A93 /* AgInOl Companion */,
+				8224F244300E875400AE6A93 /* AgInOl CompanionTests */,
+				8224F24E300E875400AE6A93 /* AgInOl CompanionUITests */,
 				825DB548300BF0B800DC1644 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,6 +144,9 @@
 				825DB547300BF0B800DC1644 /* AgInOl.app */,
 				825DB556300BF0BA00DC1644 /* AgInOlTests.xctest */,
 				825DB560300BF0BA00DC1644 /* AgInOlUITests.xctest */,
+				8224F235300E875200AE6A93 /* AgInOl Companion.app */,
+				8224F241300E875400AE6A93 /* AgInOl CompanionTests.xctest */,
+				8224F24B300E875400AE6A93 /* AgInOl CompanionUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,6 +154,74 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		8224F234300E875200AE6A93 /* AgInOl Companion */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8224F253300E875400AE6A93 /* Build configuration list for PBXNativeTarget "AgInOl Companion" */;
+			buildPhases = (
+				8224F231300E875200AE6A93 /* Sources */,
+				8224F232300E875200AE6A93 /* Frameworks */,
+				8224F233300E875200AE6A93 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				8224F236300E875300AE6A93 /* AgInOl Companion */,
+			);
+			name = "AgInOl Companion";
+			packageProductDependencies = (
+			);
+			productName = "AgInOl Companion";
+			productReference = 8224F235300E875200AE6A93 /* AgInOl Companion.app */;
+			productType = "com.apple.product-type.application";
+		};
+		8224F240300E875400AE6A93 /* AgInOl CompanionTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8224F256300E875400AE6A93 /* Build configuration list for PBXNativeTarget "AgInOl CompanionTests" */;
+			buildPhases = (
+				8224F23D300E875400AE6A93 /* Sources */,
+				8224F23E300E875400AE6A93 /* Frameworks */,
+				8224F23F300E875400AE6A93 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8224F243300E875400AE6A93 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				8224F244300E875400AE6A93 /* AgInOl CompanionTests */,
+			);
+			name = "AgInOl CompanionTests";
+			packageProductDependencies = (
+			);
+			productName = "AgInOl CompanionTests";
+			productReference = 8224F241300E875400AE6A93 /* AgInOl CompanionTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		8224F24A300E875400AE6A93 /* AgInOl CompanionUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8224F259300E875400AE6A93 /* Build configuration list for PBXNativeTarget "AgInOl CompanionUITests" */;
+			buildPhases = (
+				8224F247300E875400AE6A93 /* Sources */,
+				8224F248300E875400AE6A93 /* Frameworks */,
+				8224F249300E875400AE6A93 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8224F24D300E875400AE6A93 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				8224F24E300E875400AE6A93 /* AgInOl CompanionUITests */,
+			);
+			name = "AgInOl CompanionUITests";
+			packageProductDependencies = (
+			);
+			productName = "AgInOl CompanionUITests";
+			productReference = 8224F24B300E875400AE6A93 /* AgInOl CompanionUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		825DB546300BF0B800DC1644 /* AgInOl */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 825DB56A300BF0BA00DC1644 /* Build configuration list for PBXNativeTarget "AgInOl" */;
@@ -173,6 +300,17 @@
 				LastSwiftUpdateCheck = 2660;
 				LastUpgradeCheck = 2660;
 				TargetAttributes = {
+					8224F234300E875200AE6A93 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					8224F240300E875400AE6A93 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 8224F234300E875200AE6A93;
+					};
+					8224F24A300E875400AE6A93 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 8224F234300E875200AE6A93;
+					};
 					825DB546300BF0B800DC1644 = {
 						CreatedOnToolsVersion = 26.6;
 					};
@@ -203,11 +341,35 @@
 				825DB546300BF0B800DC1644 /* AgInOl */,
 				825DB555300BF0BA00DC1644 /* AgInOlTests */,
 				825DB55F300BF0BA00DC1644 /* AgInOlUITests */,
+				8224F234300E875200AE6A93 /* AgInOl Companion */,
+				8224F240300E875400AE6A93 /* AgInOl CompanionTests */,
+				8224F24A300E875400AE6A93 /* AgInOl CompanionUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		8224F233300E875200AE6A93 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8224F23F300E875400AE6A93 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8224F249300E875400AE6A93 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		825DB545300BF0B800DC1644 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -232,6 +394,27 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		8224F231300E875200AE6A93 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8224F23D300E875400AE6A93 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8224F247300E875400AE6A93 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		825DB543300BF0B800DC1644 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -256,6 +439,16 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		8224F243300E875400AE6A93 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8224F234300E875200AE6A93 /* AgInOl Companion */;
+			targetProxy = 8224F242300E875400AE6A93 /* PBXContainerItemProxy */;
+		};
+		8224F24D300E875400AE6A93 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8224F234300E875200AE6A93 /* AgInOl Companion */;
+			targetProxy = 8224F24C300E875400AE6A93 /* PBXContainerItemProxy */;
+		};
 		825DB558300BF0BA00DC1644 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 825DB546300BF0B800DC1644 /* AgInOl */;
@@ -269,6 +462,167 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		8224F254300E875400AE6A93 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KT43342F9W;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "de.IBMobile.AgInOl-Companion";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8224F255300E875400AE6A93 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KT43342F9W;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "de.IBMobile.AgInOl-Companion";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		8224F257300E875400AE6A93 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KT43342F9W;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "de.IBMobile.AgInOl-CompanionTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AgInOl Companion.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AgInOl Companion";
+			};
+			name = Debug;
+		};
+		8224F258300E875400AE6A93 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KT43342F9W;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "de.IBMobile.AgInOl-CompanionTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AgInOl Companion.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AgInOl Companion";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		8224F25A300E875400AE6A93 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KT43342F9W;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "de.IBMobile.AgInOl-CompanionUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "AgInOl Companion";
+			};
+			name = Debug;
+		};
+		8224F25B300E875400AE6A93 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = KT43342F9W;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "de.IBMobile.AgInOl-CompanionUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "AgInOl Companion";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		825DB568300BF0BA00DC1644 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -538,6 +892,33 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		8224F253300E875400AE6A93 /* Build configuration list for PBXNativeTarget "AgInOl Companion" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8224F254300E875400AE6A93 /* Debug */,
+				8224F255300E875400AE6A93 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8224F256300E875400AE6A93 /* Build configuration list for PBXNativeTarget "AgInOl CompanionTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8224F257300E875400AE6A93 /* Debug */,
+				8224F258300E875400AE6A93 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8224F259300E875400AE6A93 /* Build configuration list for PBXNativeTarget "AgInOl CompanionUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8224F25A300E875400AE6A93 /* Debug */,
+				8224F25B300E875400AE6A93 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		825DB542300BF0B800DC1644 /* Build configuration list for PBXProject "AgInOl" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

@@ -59,8 +59,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         panel?.orderFrontRegardless()
         // The hosting view gets its real size in a later layout pass; only
-        // then can we trust the frame for positioning.
-        DispatchQueue.main.async { self.ensureOnScreen() }
+        // then can we trust fittingSize for sizing and positioning.
+        DispatchQueue.main.async {
+            self.controller.resizeToFit()
+            self.ensureOnScreen()
+        }
     }
 
     private func ensureOnScreen() {
@@ -73,11 +76,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func makePanel() -> DeckPanel {
         // Extra padding gives the SwiftUI bezel shadow room to render.
+        // fixedSize: always lay out at the ideal size, ignoring window
+        // proposals — see the loop-detector note on DeckView's frame.
         let content = DeckView(model: model, controller: controller)
             .padding(36)
+            .fixedSize()
 
         let hosting = NSHostingView(rootView: content)
-        hosting.sizingOptions = [.preferredContentSize]
+        // No sizing constraints: .preferredContentSize couples the window
+        // size to SwiftUI's ideal size with required constraints, and at
+        // narrow grids the ideal oscillates with the proposal, tripping
+        // AppKit's layout-loop detector (uncaught exception → crash).
+        // PanelController.resizeToFit is the sole owner of window size.
+        hosting.sizingOptions = []
 
         let panel = DeckPanel(
             contentRect: NSRect(origin: .zero, size: hosting.fittingSize),

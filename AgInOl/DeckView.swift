@@ -2,8 +2,8 @@
 //  DeckView.swift
 //  AgInOl
 //
-//  The AgInOl deck: a hardware-style panel with 4×2 colored key tiles,
-//  an info-bar screen, and two round touch points.
+//  The AgInOl deck: a hardware-style panel with a configurable grid of
+//  colored key tiles, an info-bar screen, and two round touch points.
 //
 
 import SwiftUI
@@ -34,16 +34,29 @@ struct DeckView: View {
     var body: some View {
         VStack(spacing: 0) {
             keyGrid
-            infoRow
-                .padding(.top, 26)
-                .staggered(show: show, delay: 0.48)
+            // Below 3 columns the info bar has no usable width left
+            // between the two touch points, so drop the whole row; the
+            // settings toggle hides it at any width.
+            if settings.showInfoBar && settings.gridColumns >= 3 {
+                infoRow
+                    .padding(.top, 26)
+                    .staggered(show: show, delay: 0.48)
+            }
             Text("AGINOL - Agentic Information Overlay")
                 .font(.system(size: 9, weight: .semibold))
                 .tracking(3.5)
+                .lineLimit(1)
+                .minimumScaleFactor(0.4)
                 .foregroundStyle(.white.opacity(0.22))
                 .padding(.top, 14)
                 .staggered(show: show, delay: 0.54)
         }
+        // Fixed, grid-derived width: the deck's size must never depend on
+        // what the window proposes, or NSHostingView's min/max-size probes
+        // make the ideal size oscillate (wrapping/scaling text) and trip
+        // AppKit's constraint-loop detector — an uncaught exception that
+        // crashes the app at narrow grids.
+        .frame(width: gridWidth)
         .padding(.horizontal, DeckMetrics.bezelPaddingH)
         .padding(.top, DeckMetrics.bezelPaddingTop)
         .padding(.bottom, DeckMetrics.bezelPaddingBottom)
@@ -97,6 +110,17 @@ struct DeckView: View {
             model.start()
             show = true
         }
+        // The window is sized manually (no hosting constraints): grow
+        // immediately, shrink after the spring animation settles.
+        .onChange(of: settings.gridColumns) { _, _ in
+            controller.gridDidChange()
+        }
+        .onChange(of: settings.gridRows) { _, _ in
+            controller.gridDidChange()
+        }
+        .onChange(of: settings.showInfoBar) { _, _ in
+            controller.gridDidChange()
+        }
     }
 
     private var settingsOverlay: some View {
@@ -120,6 +144,11 @@ struct DeckView: View {
             )
             .transition(.scale(scale: 0.92, anchor: .bottomTrailing).combined(with: .opacity))
         }
+    }
+
+    private var gridWidth: CGFloat {
+        CGFloat(settings.gridColumns) * DeckMetrics.keySize
+            + CGFloat(settings.gridColumns - 1) * DeckMetrics.keySpacing
     }
 
     // MARK: - Bezel
@@ -149,10 +178,10 @@ struct DeckView: View {
 
     private var keyGrid: some View {
         VStack(spacing: DeckMetrics.keySpacing) {
-            ForEach(0..<2, id: \.self) { row in
+            ForEach(0..<settings.gridRows, id: \.self) { row in
                 HStack(spacing: DeckMetrics.keySpacing) {
-                    ForEach(0..<4, id: \.self) { column in
-                        keySlot(row * 4 + column)
+                    ForEach(0..<settings.gridColumns, id: \.self) { column in
+                        keySlot(row * settings.gridColumns + column)
                     }
                 }
             }
@@ -160,10 +189,10 @@ struct DeckView: View {
     }
 
     private func keySlot(_ slot: Int) -> some View {
-        let assignment = model.keyAssignments.indices.contains(slot)
-            ? model.keyAssignments[slot] : .info
+        let assignment = model.assignment(forSlot: slot)
         return KeyView(
             background: keyBackground(for: assignment),
+            chromeless: assignment == .spacer,
             appearDelay: Double(slot) * 0.06,
             show: show,
             action: { keyAction(for: assignment) },
@@ -195,6 +224,8 @@ struct DeckView: View {
             model.usageEntry(withID: "claude-spend")?.tileBackground ?? DeckColor.grayTile
         case .info, .clock:
             DeckColor.indigoTile
+        case .spacer:
+            .clear
         }
     }
 
@@ -216,21 +247,15 @@ struct DeckView: View {
                 UsageKeyContent(usage: entry, showRemaining: true)
             }
         case .claudeSessionUsed:
-            if let entry = model.usageEntry(withID: "claude-session") {
-                UsageKeyContent(usage: entry)
-            }
+            UsageKeyContent(usage: sessionUsage(withID: "claude-session", name: "CLAUDE"))
         case .claudeSessionLeft:
-            if let entry = model.usageEntry(withID: "claude-session") {
-                UsageKeyContent(usage: entry, showRemaining: true)
-            }
+            UsageKeyContent(usage: sessionUsage(withID: "claude-session", name: "CLAUDE"),
+                            showRemaining: true)
         case .codexSessionUsed:
-            if let entry = model.usageEntry(withID: "codex-session") {
-                UsageKeyContent(usage: entry)
-            }
+            UsageKeyContent(usage: sessionUsage(withID: "codex-session", name: "CODEX"))
         case .codexSessionLeft:
-            if let entry = model.usageEntry(withID: "codex-session") {
-                UsageKeyContent(usage: entry, showRemaining: true)
-            }
+            UsageKeyContent(usage: sessionUsage(withID: "codex-session", name: "CODEX"),
+                            showRemaining: true)
         case .claudeSpend:
             if let entry = model.usageEntry(withID: "claude-spend") {
                 UsageKeyContent(usage: entry)
@@ -244,7 +269,20 @@ struct DeckView: View {
             InfoKeyContent(model: model)
         case .clock:
             ClockKeyContent(now: model.now)
+        case .spacer:
+            Color.clear
         }
+    }
+
+    /// Session entry for a key, or an honest placeholder when the
+    /// provider reports no session window (e.g. newer Codex CLIs only
+    /// log the weekly limit).
+    private func sessionUsage(withID id: String, name: String) -> ProviderUsage {
+        model.usageEntry(withID: id) ?? ProviderUsage(
+            id: id, name: name, tint: DeckColor.gray,
+            tileBackground: DeckColor.grayTile,
+            kind: .unavailable(caption: "no session data")
+        )
     }
 
     private func keyAction(for assignment: KeyAssignment) {
@@ -281,7 +319,7 @@ struct DeckView: View {
                 }
             case .info:
                 model.advancePage(by: 1)
-            case .clock:
+            case .clock, .spacer:
                 break
             }
         }
@@ -297,7 +335,7 @@ struct DeckView: View {
 
     /// Layer 1 general entries; providers get a layer 2 each. New
     /// OpenUsage-ported providers slot into this list.
-    private static let generalOptions: [KeyAssignment] = [.allAgents, .info, .clock]
+    private static let generalOptions: [KeyAssignment] = [.allAgents, .info, .clock, .spacer]
     private static let pickerProviders: [PickerProvider] = [
         PickerProvider(id: "claude", name: "Claude",
                        options: [.claudeStatus, .claudeUsed, .claudeLeft, .claudeSessionUsed, .claudeSessionLeft, .claudeSpend]),
@@ -316,8 +354,7 @@ struct DeckView: View {
                 pickerProviderID = nil
             }
         }
-        let currentAssignment = model.keyAssignments.indices.contains(slot)
-            ? model.keyAssignments[slot] : nil
+        let currentAssignment: KeyAssignment? = model.assignment(forSlot: slot)
 
         return ZStack {
             Color.black.opacity(0.45)
@@ -603,6 +640,9 @@ struct DeckView: View {
 /// fires `longPressAction` on release (choose what the key displays).
 struct KeyView<Content: View>: View {
     var background: Color
+    /// Spacer keys: no face, highlight, border, or shadow — just an
+    /// empty, still long-pressable slot in the grid.
+    var chromeless = false
     var appearDelay: Double
     var show: Bool
     var action: () -> Void
@@ -617,24 +657,30 @@ struct KeyView<Content: View>: View {
         ZStack {
             RoundedRectangle(cornerRadius: DeckMetrics.keyCorner, style: .continuous)
                 .fill(background)
-            RoundedRectangle(cornerRadius: DeckMetrics.keyCorner, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [.white.opacity(0.08), .clear],
-                        startPoint: .top, endPoint: .center
+            if !chromeless {
+                RoundedRectangle(cornerRadius: DeckMetrics.keyCorner, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [.white.opacity(0.08), .clear],
+                            startPoint: .top, endPoint: .center
+                        )
                     )
-                )
+            }
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            RoundedRectangle(cornerRadius: DeckMetrics.keyCorner, style: .continuous)
-                .strokeBorder(.white.opacity(0.07), lineWidth: 1)
+            if !chromeless {
+                RoundedRectangle(cornerRadius: DeckMetrics.keyCorner, style: .continuous)
+                    .strokeBorder(.white.opacity(0.07), lineWidth: 1)
+            }
         }
         .frame(width: DeckMetrics.keySize, height: DeckMetrics.keySize)
         .compositingGroup()
         .scaleEffect(isPressed ? 0.96 : 1.0)
         .saturation(isPressed ? 0.82 : 1.0)
-        .shadow(color: .black.opacity(isPressed ? 0.12 : 0.35),
+        .shadow(color: .black.opacity(chromeless ? 0 : isPressed ? 0.12 : 0.35),
                 radius: isPressed ? 2 : 7, y: isPressed ? 1 : 4)
+        .contentShape(RoundedRectangle(cornerRadius: DeckMetrics.keyCorner,
+                                       style: .continuous))
         .animation(.spring(response: 0.25, dampingFraction: 0.6), value: isPressed)
         .gesture(
             DragGesture(minimumDistance: 0)
@@ -849,7 +895,7 @@ struct ClockKeyContent: View {
 
     var body: some View {
         VStack(spacing: 5) {
-            Text(now, format: .dateTime.hour(.twoDigits(amPM: .omitted)).minute())
+            Text(now, format: .dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
                 .font(.system(size: 22, weight: .heavy))
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(0.92))
@@ -928,62 +974,72 @@ struct InfoBarView: View {
                     .layoutPriority(-1)
             }
         case .agent(let agent):
-            HStack(spacing: 10) {
-                Circle()
-                    .fill(agent.status.tint)
-                    .frame(width: 8, height: 8)
-                    .shadow(color: agent.status.tint.opacity(0.8), radius: 3)
-                Text(agent.name)
-                    .font(.system(size: 14, weight: .heavy))
-                    .foregroundStyle(.white.opacity(0.95))
-                    .lineLimit(1)
-                    .layoutPriority(1)
-                Text(agent.status.label)
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(agent.status.tint)
-                    .lineLimit(1)
-                    .layoutPriority(1)
-                Spacer(minLength: 8)
-                if agent.status == .working, let start = agent.startedAt {
-                    Text(DeckModel.elapsed(since: start, now: model.now))
-                        .font(.system(size: 13, weight: .semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(.white.opacity(0.6))
-                } else {
-                    Text(agent.sessionCaption)
-                        .font(.system(size: 11, weight: .semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(.white.opacity(0.6))
+            // Same two-row shape as the summary page: heading line on
+            // top, details underneath — fits the narrow 3-column bar.
+            HStack(alignment: .center, spacing: 0) {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(agent.status.tint)
+                            .frame(width: 8, height: 8)
+                            .shadow(color: agent.status.tint.opacity(0.8), radius: 3)
+                        Text(agent.name)
+                            .font(.system(size: 14, weight: .heavy))
+                            .foregroundStyle(.white.opacity(0.95))
+                            .lineLimit(1)
+                        Text(agent.status.label)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(agent.status.tint)
+                            .lineLimit(1)
+                    }
+                    HStack(spacing: 8) {
+                        if agent.status == .working, let start = agent.startedAt {
+                            Text(DeckModel.elapsed(since: start, now: model.now))
+                                .font(.system(size: 11, weight: .semibold))
+                                .monospacedDigit()
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
+                        Text(agent.sessionCaption)
+                            .font(.system(size: 11, weight: .semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(.white.opacity(0.6))
+                            .lineLimit(1)
+                    }
                 }
+                Spacer(minLength: 0)
             }
         case .usage(let entry):
-            HStack(spacing: 10) {
-                Circle()
-                    .fill(entry.tint)
-                    .frame(width: 8, height: 8)
-                Text(entry.name)
-                    .font(.system(size: 14, weight: .heavy))
-                    .foregroundStyle(.white.opacity(0.95))
-                    .lineLimit(1)
-                    .layoutPriority(1)
-                Text(entry.bigValue)
-                    .font(.system(size: 14, weight: .heavy))
-                    .monospacedDigit()
-                    .foregroundStyle(entry.tint)
-                    .lineLimit(1)
-                    .layoutPriority(1)
-                Text(entry.caption)
-                    .font(.system(size: 11, weight: .semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(.white.opacity(0.6))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                if let secondary = entry.secondaryText {
-                    Text(secondary)
-                        .font(.system(size: 11, weight: .semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(.white.opacity(0.4))
-                        .lineLimit(1)
+            HStack(alignment: .center, spacing: 0) {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(entry.tint)
+                            .frame(width: 8, height: 8)
+                        Text(entry.name)
+                            .font(.system(size: 14, weight: .heavy))
+                            .foregroundStyle(.white.opacity(0.95))
+                            .lineLimit(1)
+                        Text(entry.bigValue)
+                            .font(.system(size: 14, weight: .heavy))
+                            .monospacedDigit()
+                            .foregroundStyle(entry.tint)
+                            .lineLimit(1)
+                    }
+                    HStack(spacing: 8) {
+                        Text(entry.caption)
+                            .font(.system(size: 11, weight: .semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(.white.opacity(0.6))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                        if let secondary = entry.secondaryText {
+                            Text(secondary)
+                                .font(.system(size: 11, weight: .semibold))
+                                .monospacedDigit()
+                                .foregroundStyle(.white.opacity(0.4))
+                                .lineLimit(1)
+                        }
+                    }
                 }
                 Spacer(minLength: 8)
                 if let fraction = entry.barFraction {
@@ -1085,6 +1141,33 @@ struct SettingsCard: View {
 
             HairlineSeparator()
 
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Key grid")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.9))
+                gridOptionRow(label: "Columns", options: AppSettings.columnOptions,
+                              selection: $settings.gridColumns)
+                gridOptionRow(label: "Rows", options: AppSettings.rowOptions,
+                              selection: $settings.gridRows)
+                Toggle(isOn: Binding(
+                    get: { settings.showInfoBar },
+                    set: { value in
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            settings.showInfoBar = value
+                        }
+                    }
+                )) {
+                    Text("Info bar")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                }
+                .toggleStyle(DeckToggleStyle())
+                .padding(.top, 4)
+            }
+            .padding(.vertical, 12)
+
+            HairlineSeparator()
+
             Text("Double-tap or long-press any key to choose what it displays")
                 .font(.system(size: 8.5, weight: .medium))
                 .foregroundStyle(.white.opacity(0.4))
@@ -1115,6 +1198,37 @@ struct SettingsCard: View {
                 )
                 .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
         )
+    }
+
+    private func gridOptionRow(label: String, options: [Int],
+                               selection: Binding<Int>) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.white.opacity(0.55))
+            Spacer()
+            HStack(spacing: 4) {
+                ForEach(options, id: \.self) { value in
+                    let isSelected = selection.wrappedValue == value
+                    Text("\(value)")
+                        .font(.system(size: 11, weight: .bold))
+                        .monospacedDigit()
+                        .foregroundStyle(isSelected ? Color.black.opacity(0.85)
+                                                    : Color.white.opacity(0.65))
+                        .frame(width: 26, height: 22)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(isSelected ? DeckColor.green : Color.white.opacity(0.08))
+                        )
+                        .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                selection.wrappedValue = value
+                            }
+                        }
+                }
+            }
+        }
     }
 }
 

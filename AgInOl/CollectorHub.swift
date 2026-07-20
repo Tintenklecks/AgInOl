@@ -232,8 +232,13 @@ final class CollectorHub {
                                  kind: .percent(fraction: percent, window: "5h"))
 
         case "codex":
-            let sorted = windows.sorted { ($0.periodSeconds ?? 0) < ($1.periodSeconds ?? 0) }
-            guard let session = sorted.first, let percent = session.percent else { return nil }
+            // Codex's short (≈5h) window only — newer CLIs log just the
+            // weekly limit ("primary" is 10080 min, "secondary" null), and
+            // the weekly number must never pose as the session amount.
+            let session = windows
+                .filter { ($0.periodSeconds ?? 0) > 0 && $0.periodSeconds! <= 24 * 3600 }
+                .min { ($0.periodSeconds ?? 0) < ($1.periodSeconds ?? 0) }
+            guard let session, let percent = session.percent else { return nil }
             return ProviderUsage(id: "codex-session", name: name,
                                  tint: DeckColor.cyan, tileBackground: DeckColor.blueTile,
                                  kind: .percent(fraction: percent, window: session.label))

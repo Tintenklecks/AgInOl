@@ -162,6 +162,7 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
     case codexSessionUsed, codexSessionLeft
     case opencodeUsage, kimiUsage
     case info, clock
+    case spacer
 
     var id: String { rawValue }
 
@@ -185,6 +186,7 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
         case .kimiUsage:      "Kimi · tokens"
         case .info:           "Info pages"
         case .clock:          "Clock"
+        case .spacer:         "Empty"
         }
     }
 
@@ -200,6 +202,7 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
         case .allAgents:                                   "All agents"
         case .info:                                        "Info pages"
         case .clock:                                       "Clock"
+        case .spacer:                                      "Empty"
         }
     }
 
@@ -212,14 +215,25 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
              .codexSessionUsed, .codexSessionLeft:   "codex"
         case .opencodeStatus, .opencodeUsage:              "opencode"
         case .kimiStatus, .kimiUsage:                      "kimi"
-        case .allAgents, .info, .clock:                    nil
+        case .allAgents, .info, .clock, .spacer:           nil
         }
     }
 
+    /// Row-major fresh-install defaults; the first 8 are the original 4×2
+    /// layout, the rest fill in when the grid grows in settings (up to
+    /// the 6×4 maximum).
     static let defaultLayout: [KeyAssignment] = [
         .claudeStatus, .codexStatus, .opencodeStatus, .kimiStatus,
         .claudeUsed, .codexUsed, .opencodeUsage, .kimiUsage,
+        .allAgents, .claudeSpend, .clock, .info,
+        .claudeSessionUsed, .codexSessionUsed, .claudeLeft, .codexLeft,
+        .claudeSessionLeft, .codexSessionLeft, .clock, .info,
+        .info, .info, .info, .info,
     ]
+
+    static func defaultAssignment(forSlot slot: Int) -> KeyAssignment {
+        defaultLayout.indices.contains(slot) ? defaultLayout[slot] : .info
+    }
 }
 
 // MARK: - Model-name shortening
@@ -254,15 +268,27 @@ final class DeckModel {
         self.agents = agents
         self.usage = usage
         if let stored = UserDefaults.standard.stringArray(forKey: Self.assignmentsKey),
-           stored.count == 8 {
-            keyAssignments = stored.map { KeyAssignment(rawValue: $0) ?? .info }
+           !stored.isEmpty {
+            keyAssignments = stored.enumerated().map { slot, raw in
+                KeyAssignment(rawValue: raw) ?? KeyAssignment.defaultAssignment(forSlot: slot)
+            }
         } else {
             keyAssignments = KeyAssignment.defaultLayout
         }
     }
 
+    /// Assignment shown in `slot`, falling back to defaults for slots the
+    /// stored layout hasn't covered yet (the grid can grow in settings).
+    func assignment(forSlot slot: Int) -> KeyAssignment {
+        keyAssignments.indices.contains(slot) ? keyAssignments[slot]
+            : KeyAssignment.defaultAssignment(forSlot: slot)
+    }
+
     func assign(_ assignment: KeyAssignment, toSlot slot: Int) {
-        guard keyAssignments.indices.contains(slot) else { return }
+        guard slot >= 0 else { return }
+        while keyAssignments.count <= slot {
+            keyAssignments.append(KeyAssignment.defaultAssignment(forSlot: keyAssignments.count))
+        }
         keyAssignments[slot] = assignment
         UserDefaults.standard.set(keyAssignments.map(\.rawValue), forKey: Self.assignmentsKey)
     }
