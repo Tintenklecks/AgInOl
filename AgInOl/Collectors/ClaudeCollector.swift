@@ -128,9 +128,9 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
                 && Date().timeIntervalSince(activityAt) < 5 * 60
             let statusAttentionAt = max(statusUpdatedAt ?? .distantPast, activityAt)
 
-            if status.contains(anyOf: ["working", "running", "busy", "processing"]) || tailWorking {
+            if ["working", "running", "busy", "processing"].contains(where: { status.contains($0) }) || tailWorking {
                 state = .working
-            } else if status.contains(anyOf: ["attention", "waiting", "permission", "blocked", "input"]),
+            } else if ["attention", "waiting", "permission", "blocked", "input"].contains(where: { status.contains($0) }),
                       !context.isAcknowledged(key, at: statusAttentionAt) {
                 state = .attention
                 completionAt = statusAttentionAt
@@ -278,10 +278,4 @@ nonisolated struct CollectorError: Error, LocalizedError {
     let message: String
     init(_ message: String) { self.message = message }
     var errorDescription: String? { message }
-}
-
-private extension String {
-    nonisolated func contains(anyOf needles: [String]) -> Bool {
-        needles.contains { contains($0) }
-    }
 }
