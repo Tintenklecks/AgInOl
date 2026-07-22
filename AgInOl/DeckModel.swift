@@ -9,31 +9,6 @@
 import SwiftUI
 import Observation
 
-// MARK: - Palette (matched to the Neo Agent Deck reference)
-
-enum DeckColor {
-    static let green  = Color(red: 0.22, green: 0.87, blue: 0.45)
-    static let amber  = Color(red: 1.00, green: 0.72, blue: 0.10)
-    static let orange = Color(red: 1.00, green: 0.62, blue: 0.26)
-    static let cyan   = Color(red: 0.35, green: 0.78, blue: 0.98)
-    static let purple = Color(red: 0.72, green: 0.60, blue: 0.99)
-    static let magenta = Color(red: 0.95, green: 0.35, blue: 0.65)
-    static let gray   = Color(white: 0.62)
-
-    // Tile card backgrounds
-    static let greenTile  = Color(red: 0.09, green: 0.23, blue: 0.15)
-    static let amberTile  = Color(red: 0.29, green: 0.20, blue: 0.05)
-    static let grayTile   = Color(red: 0.15, green: 0.16, blue: 0.19)
-    static let oliveTile  = Color(red: 0.26, green: 0.19, blue: 0.04)
-    static let brownTile  = Color(red: 0.25, green: 0.13, blue: 0.06)
-    static let blueTile   = Color(red: 0.06, green: 0.15, blue: 0.25)
-    static let purpleTile = Color(red: 0.15, green: 0.11, blue: 0.27)
-    static let magentaTile = Color(red: 0.28, green: 0.08, blue: 0.16)
-    static let indigoTile = Color(red: 0.18, green: 0.13, blue: 0.30)
-
-    static let screen = Color(red: 0.05, green: 0.055, blue: 0.07)
-}
-
 // MARK: - Agents
 
 enum AgentStatus: String {
@@ -136,7 +111,11 @@ struct ProviderUsage: Identifiable {
         case .percent(_, let window):
             "\(window) used"
         case .tokens(_, let cost, let window):
-            String(format: "$%.2f / %@", cost, window)
+            // A zero cost means "this provider reports no spend", not
+            // "you spent nothing" — don't print $0.00 as if it were a fact.
+            // Keep in step with SnapshotUsage.caption.
+            cost > 0 ? String(format: "$%.2f / %@", cost, window)
+                     : "\(window) tokens"
         case .unavailable(let caption):
             caption
         }

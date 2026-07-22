@@ -24,11 +24,18 @@ final class CollectorHub {
     private var workingSince: [String: Date] = [:]
     private var attentionKeys: [String: [String]] = [:]
     private var loop: Task<Void, Never>?
+    /// Outbound mirror. Held behind the protocol so the iCloud KVS
+    /// transport can be swapped for a faster one without touching the
+    /// poll cycle.
+    private let sync: any DeckSyncPublishing
 
     private static let ackDefaultsKey = "CollectorAcknowledged"
 
-    init(model: DeckModel) {
+    /// `sync` defaults to the iCloud KVS transport; default arguments are
+    /// evaluated off the actor, so it is built here rather than inline.
+    init(model: DeckModel, sync: (any DeckSyncPublishing)? = nil) {
         self.model = model
+        self.sync = sync ?? KVSDeckSyncService()
         let stored = UserDefaults.standard.dictionary(forKey: Self.ackDefaultsKey) as? [String: Double] ?? [:]
         acknowledged = stored.mapValues { Date(timeIntervalSince1970: $0) }
         model.onAcknowledge = { [weak self] providerID in
@@ -142,6 +149,10 @@ final class CollectorHub {
         withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
             model.apply(agents: agents, usage: usage)
         }
+
+        // Mirror outward on every cycle; the transport decides what is
+        // actually worth sending.
+        sync.publish(DeckSnapshot.make(agents: agents, usage: usage))
     }
 
     // MARK: - Usage mapping

@@ -17,3 +17,6 @@ xcuserdata/
 # Coverage / profiling artifacts
 *.profraw
 *.profdata
+
+# Claude Code personal overrides
+.claude/settings.local.json
