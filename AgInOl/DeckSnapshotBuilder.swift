@@ -36,8 +36,21 @@ private extension SnapshotAgent {
             status: SnapshotAgentStatus(rawValue: agent.status.rawValue) ?? .offline,
             sessions: agent.sessions,
             startedAt: agent.startedAt,
-            models: agent.models
+            models: agent.models,
+            openSessions: agent.openSessions.map(SnapshotAgentSession.init)
         )
+    }
+}
+
+private extension SnapshotAgentSession {
+    @MainActor
+    init(_ session: AgentSession) {
+        let state: State = switch session.state {
+        case .working: .working
+        case .attention: .attention
+        case .idle: .idle
+        }
+        self.init(id: session.id, title: session.title, state: state, since: session.since)
     }
 }
 
@@ -58,7 +71,8 @@ private extension SnapshotUsage {
             name: usage.name,
             palette: SnapshotPalette(tileID: usage.id, kind: kind),
             kind: kind,
-            secondaryText: usage.secondaryText
+            secondaryText: usage.secondaryText,
+            resetsAt: usage.resetsAt
         )
     }
 }

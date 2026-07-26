@@ -36,10 +36,35 @@ struct SnapshotAgent: Codable, Equatable, Sendable, Identifiable {
     /// instead of needing a fresh snapshot every second.
     let startedAt: Date?
     let models: [String]
+    /// Optional for wire compatibility with snapshots written by older Mac builds.
+    let openSessions: [SnapshotAgentSession]?
+
+    init(id: String, name: String, status: SnapshotAgentStatus, sessions: Int,
+         startedAt: Date?, models: [String],
+         openSessions: [SnapshotAgentSession]? = nil) {
+        self.id = id
+        self.name = name
+        self.status = status
+        self.sessions = sessions
+        self.startedAt = startedAt
+        self.models = models
+        self.openSessions = openSessions
+    }
 }
 
 enum SnapshotAgentStatus: String, Codable, Sendable {
     case working, needsYou, idle, offline
+}
+
+struct SnapshotAgentSession: Codable, Equatable, Sendable, Identifiable {
+    enum State: String, Codable, Sendable {
+        case working, attention, idle
+    }
+
+    let id: String
+    let title: String
+    let state: State
+    let since: Date?
 }
 
 struct SnapshotUsage: Codable, Equatable, Sendable, Identifiable {
@@ -54,6 +79,18 @@ struct SnapshotUsage: Codable, Equatable, Sendable, Identifiable {
     let palette: SnapshotPalette
     let kind: Kind
     let secondaryText: String?
+    /// Optional for wire compatibility with snapshots written by older Mac builds.
+    let resetsAt: Date?
+
+    init(id: String, name: String, palette: SnapshotPalette, kind: Kind,
+         secondaryText: String?, resetsAt: Date? = nil) {
+        self.id = id
+        self.name = name
+        self.palette = palette
+        self.kind = kind
+        self.secondaryText = secondaryText
+        self.resetsAt = resetsAt
+    }
 }
 
 /// Semantic colour token rather than an encoded RGB value, so each
