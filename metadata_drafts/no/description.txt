@@ -1,0 +1,17 @@
+Se hvor som helst hvilke KI-kodeagenter på Macen som jobber eller venter på innspill.
+
+VIKTIG: AgInOl Companion er ikke en frittstående overvåker. Last først ned AgInOl for Mac fra https://aiia.li/apps/aginol, installer den på Macen der agentene kjører, og la appen være åpen. Macen og iPhone eller iPad må bruke samme Apple Account med iCloud aktivert.
+
+Enten du er ved siden av Macen eller 500 km unna, viser appen en skrivebeskyttet visning av det siste øyeblikksbildet. Enhetene trenger ikke være på samme Wi-Fi-nettverk.
+
+MED ETT BLIKK
+• Se statusene JOBBER, INAKTIV, TRENGER DEG og IKKE FUNNET
+• Kontroller åpne økter, prosjektnavn, modeller og tidsbruk
+• Se tilgjengelige tokener og bruksgrenser, med tilbakestillingstid når den finnes
+• Åpne en oversikt over alle agentene
+• Se alltid alderen på øyeblikksbildet og tydelig merking av gamle data
+
+SLIK VIRKER DET
+AgInOl for Mac leser lokale øktfiler fra støttede kodeverktøy og sender et redusert statusbilde via iCloud. Companion-appen kjører eller styrer ikke agenter.
+
+For aktuelle oppdateringer må Mac-appen være åpen og Macen være på nett. iCloud-levering kan ta fra sekunder til minutter. Støttede verktøy er Claude Code, Codex, OpenCode og Kimi Code.

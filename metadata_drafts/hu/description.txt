@@ -1,0 +1,17 @@
+Bárhonnan láthatod, mely MI-kódoló ügynökök dolgoznak a Maceden, és melyek várnak bevitelre.
+
+FONTOS: az AgInOl Companion önmagában nem működő figyelő. Először töltsd le az AgInOl for Mac alkalmazást a https://aiia.li/apps/aginol címről, telepítsd arra a Macre, amelyen az ügynökök futnak, és hagyd megnyitva. A Macnek és az iPhone-nak vagy iPadnek ugyanazt az Apple Accountot kell használnia bekapcsolt iClouddal.
+
+Akár a Mac mellett vagy, akár 500 km-re, az alkalmazás írásvédett nézetet ad a legutóbbi állapotképről. Az eszközöknek nem kell ugyanazon a Wi-Fi-hálózaton lenniük.
+
+EGY PILLANTÁS ALATT
+• Lásd a DOLGOZIK, TÉTLEN, RÁD VÁR és NEM TALÁLHATÓ állapotokat
+• Tekintsd át a nyitott munkameneteket, projektcímeket, modelleket és eltelt időt
+• Ellenőrizd a token- és korlátadatokat, valamint az újraindítás idejét, ha elérhető
+• Nyisd meg az összes ügynök összesítését
+• Mindig lásd a pillanatkép korát és az elavult adatok jelzését
+
+MŰKÖDÉS
+Az AgInOl for Mac beolvassa a támogatott kódolóeszközök helyi munkamenetfájljait, majd csökkentett állapotképet küld iCloudon. A Companion nem futtatja és nem vezérli az ügynököket.
+
+Az aktuális frissítésekhez tartsd nyitva a Mac alkalmazást, a Mac pedig legyen online. Az iCloud-kézbesítés másodpercektől percekig tarthat. Támogatott eszközök: Claude Code, Codex, OpenCode és Kimi Code.

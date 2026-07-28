@@ -1,0 +1,17 @@
+Nerede olursanız olun, Mac'inizdeki hangi yapay zekâ kodlama ajanlarının çalıştığını veya giriş beklediğini görün.
+
+ÖNEMLİ: AgInOl Companion bağımsız bir izleme uygulaması değildir. Önce https://aiia.li/apps/aginol adresinden AgInOl for Mac'i indirin, ajanların çalıştığı Mac'e kurun ve uygulamayı açık tutun. Mac ile iPhone veya iPad, iCloud'un etkin olduğu aynı Apple Account'u kullanmalıdır.
+
+Mac'in yanında veya 500 km uzakta olmanız fark etmez; uygulama en son deste görüntüsünü salt okunur olarak sunar. Cihazların aynı Wi-Fi ağında olması gerekmez.
+
+TEK BAKIŞTA
+• ÇALIŞIYOR, BOŞTA, SİZİ BEKLİYOR ve BULUNAMADI durumları
+• Açık oturumlar, proje adları, modeller ve geçen süre
+• Kullanılabilir token ve limit bilgileri; sunuluyorsa sıfırlanma zamanı
+• Tüm ajanların özeti
+• Anlık görüntünün yaşı ve eski veriler için açık uyarı
+
+NASIL ÇALIŞIR
+AgInOl for Mac, desteklenen kodlama araçlarının yerel oturum dosyalarını okur ve azaltılmış durum görüntüsünü iCloud üzerinden gönderir. Companion ajanları çalıştırmaz veya kontrol etmez.
+
+Güncel bilgiler için Mac uygulamasını açık, Mac'i çevrimiçi tutun. iCloud aktarımı birkaç saniye ile birkaç dakika sürebilir. Claude Code, Codex, OpenCode ve Kimi Code desteklenir.

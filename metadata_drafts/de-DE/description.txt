@@ -1,0 +1,17 @@
+Sieh von überall, welche KI-Coding-Agenten auf deinem Mac arbeiten oder auf eine Eingabe warten.
+
+WICHTIG: AgInOl Companion ist kein eigenständiger Monitor. Lade zuerst AgInOl für Mac unter https://aiia.li/apps/aginol herunter, installiere es auf dem Mac, auf dem deine Agenten laufen, und lass die App geöffnet. Mac und iPhone oder iPad müssen mit demselben Apple Account bei iCloud angemeldet sein.
+
+Ob direkt neben dem Mac oder 500 km entfernt: Die App zeigt dir einen schreibgeschützten Stand des aktuellen Deck-Snapshots. Beide Geräte müssen nicht im selben WLAN sein.
+
+AUF EINEN BLICK
+• Erkenne die Zustände ARBEITET, INAKTIV, BRAUCHT DICH und NICHT GEFUNDEN
+• Prüfe offene Sitzungen, Projekttitel, Modelle und Laufzeiten
+• Sieh verfügbare Token- und Ratenlimitdaten samt Rücksetzzeit, sofern vorhanden
+• Öffne eine Übersicht über alle Agenten
+• Behalte das Alter des Snapshots im Blick; veraltete Daten werden klar markiert
+
+SO FUNKTIONIERT ES
+AgInOl für Mac liest lokale Sitzungsdateien unterstützter Coding-Tools und sendet einen reduzierten Status-Snapshot über iCloud. Die Companion-App führt keine Agenten aus und steuert sie nicht.
+
+Für aktuelle Updates müssen die Mac-App geöffnet und der Mac online bleiben. Die iCloud-Übertragung kann Sekunden bis Minuten dauern. Unterstützt werden Claude Code, Codex, OpenCode und Kimi Code.

@@ -1,0 +1,17 @@
+Dù ở đâu, bạn cũng có thể xem tác nhân lập trình AI nào trên máy Mac đang chạy hoặc chờ bạn nhập dữ liệu.
+
+QUAN TRỌNG: AgInOl Companion không phải ứng dụng giám sát độc lập. Trước tiên, hãy tải AgInOl cho Mac tại https://aiia.li/apps/aginol, cài trên máy Mac chạy các tác nhân và luôn mở ứng dụng. Máy Mac và iPhone hoặc iPad phải dùng cùng một Apple Account và bật iCloud.
+
+Dù ở cạnh máy Mac hay cách xa 500 km, ứng dụng vẫn hiển thị bản chụp bảng điều khiển mới nhất ở chế độ chỉ đọc. Hai thiết bị không cần dùng chung mạng Wi-Fi.
+
+XEM NHANH
+• Các trạng thái ĐANG CHẠY, KHÔNG HOẠT ĐỘNG, CẦN BẠN và KHÔNG TÌM THẤY
+• Phiên đang mở, tên dự án, mô hình và thời gian đã chạy
+• Token và giới hạn hiện có, cùng thời gian đặt lại khi được cung cấp
+• Bản tóm tắt tất cả tác nhân
+• Tuổi của bản chụp và cảnh báo rõ ràng khi dữ liệu đã cũ
+
+CÁCH HOẠT ĐỘNG
+AgInOl cho Mac đọc tệp phiên cục bộ của các công cụ được hỗ trợ rồi gửi bản chụp trạng thái rút gọn qua iCloud. Companion không chạy hoặc điều khiển tác nhân.
+
+Để nhận cập nhật hiện tại, hãy giữ ứng dụng Mac đang mở và máy Mac trực tuyến. iCloud có thể mất vài giây đến vài phút để chuyển dữ liệu. Hỗ trợ Claude Code, Codex, OpenCode và Kimi Code.

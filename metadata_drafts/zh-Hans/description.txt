@@ -1,0 +1,17 @@
+无论身在何处，都能查看 Mac 上哪些 AI 编程智能体正在工作，哪些正在等待你的输入。
+
+重要提示：AgInOl Companion 不能独立工作。请先从 https://aiia.li/apps/aginol 下载 AgInOl Mac 版，将其安装在运行智能体的 Mac 上，并保持应用开启。Mac 与 iPhone 或 iPad 必须使用同一个 Apple Account，并启用 iCloud。
+
+无论你就在 Mac 旁边，还是相距 500 公里，都能以只读方式查看最新的控制面板快照。两台设备无需连接同一个 Wi-Fi 网络。
+
+一目了然
+• 查看正在工作、空闲、需要你和未找到等状态
+• 检查打开的会话、项目名称、模型和运行时间
+• 查看可用的令牌和限额信息，以及提供时的重置时间
+• 打开全部智能体摘要
+• 始终显示快照时间，并明确提示过期数据
+
+工作方式
+AgInOl Mac 版读取受支持编程工具的本地会话文件，并通过 iCloud 发送精简的状态快照。Companion 不会运行或控制智能体。
+
+如需当前更新，请保持 Mac 应用运行且 Mac 在线。iCloud 传送可能需要几秒到几分钟。支持 Claude Code、Codex、OpenCode 和 Kimi Code。

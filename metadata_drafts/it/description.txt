@@ -1,0 +1,17 @@
+Ovunque ti trovi, controlla quali agenti di programmazione IA sul tuo Mac stanno lavorando o aspettano istruzioni.
+
+IMPORTANTE: AgInOl Companion non è un monitor autonomo. Prima scarica AgInOl per Mac da https://aiia.li/apps/aginol, installalo sul Mac dove vengono eseguiti gli agenti e lascialo aperto. Il Mac e l’iPhone o iPad devono usare lo stesso Apple Account con iCloud attivo.
+
+Che tu sia accanto al Mac o a 500 km di distanza, l’app mostra una vista in sola lettura dell’ultima istantanea del pannello. I dispositivi non devono trovarsi sulla stessa rete Wi-Fi.
+
+A COLPO D’OCCHIO
+• Distingui tra IN ESECUZIONE, INATTIVO, RICHIEDE TE e NON TROVATO
+• Consulta sessioni aperte, titoli dei progetti, modelli e tempo trascorso
+• Verifica token e limiti disponibili, compreso l’orario di ripristino se fornito
+• Apri un riepilogo di tutti gli agenti
+• Controlla sempre l’età dell’istantanea e riconosci chiaramente i dati meno recenti
+
+COME FUNZIONA
+AgInOl per Mac legge i file di sessione locali degli strumenti supportati e invia tramite iCloud un’istantanea ridotta dello stato. L’app Companion non esegue né controlla gli agenti.
+
+Per ricevere aggiornamenti attuali, lascia aperta l’app sul Mac e mantieni il Mac online. La consegna via iCloud può richiedere da pochi secondi ad alcuni minuti. Sono supportati Claude Code, Codex, OpenCode e Kimi Code.
