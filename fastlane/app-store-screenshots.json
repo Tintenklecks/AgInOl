@@ -1,0 +1,641 @@
+{
+  "schemaVersion": 2,
+  "appName": "AgInOl Companion",
+  "themeId": "control-room",
+  "connectedCanvas": true,
+  "locales": [
+    "de-DE",
+    "en-US",
+    "es-ES",
+    "es-MX",
+    "fr-FR",
+    "hi",
+    "hu",
+    "it",
+    "ja",
+    "ko",
+    "no",
+    "pl",
+    "pt-BR",
+    "pt-PT",
+    "ru",
+    "sv",
+    "th",
+    "tr",
+    "uk",
+    "vi",
+    "zh-Hans"
+  ],
+  "locale": "en-US",
+  "device": "iphone",
+  "orientation": "portrait",
+  "appIcon": "/app-icon.png",
+  "slidesByDevice": {
+    "iphone": [
+      {
+        "id": "iphone-hero",
+        "layout": "two-devices",
+        "label": {
+          "en": "MAC + iCLOUD + IPHONE"
+        },
+        "headline": {
+          "de-DE": "Deine Mac-Agenten.\nÜberall.",
+          "en-US": "Your Mac agents.\nAnywhere.",
+          "es-ES": "Tus agentes del Mac.\nEstés donde estés.",
+          "es-MX": "Tus agentes de Mac.\nDonde estés.",
+          "fr-FR": "Vos agents Mac.\nPartout avec vous.",
+          "hi": "आपके Mac एजेंट।\nहर जगह।",
+          "hu": "Mac-agenseid.\nBárhol.",
+          "it": "I tuoi agenti Mac.\nOvunque.",
+          "ja": "Macのエージェントを\nどこからでも。",
+          "ko": "Mac 에이전트를\n어디서나 확인.",
+          "no": "Mac-agentene dine.\nUansett hvor du er.",
+          "pl": "Twoi agenci na Macu.\nGdziekolwiek jesteś.",
+          "pt-BR": "Seus agentes no Mac.\nDe qualquer lugar.",
+          "pt-PT": "Os seus agentes Mac.\nOnde quer que esteja.",
+          "ru": "Ваши агенты на Mac.\nГде бы вы ни были.",
+          "sv": "Dina Mac-agenter.\nVar du än är.",
+          "th": "เอเจนต์บน Mac ของคุณ\nได้จากทุกที่",
+          "tr": "Mac ajanların.\nHer yerden yanında.",
+          "uk": "Ваші агенти на Mac.\nДе б ви не були.",
+          "vi": "Các agent trên Mac.\nỞ bất cứ đâu.",
+          "zh-Hans": "Mac 上的智能体。\n随时随地查看。"
+        },
+        "screenshot": "/screenshots/apple/iphone/00.png",
+        "screenshotSecondary": "/screenshots/apple/shared/mac-dashboard.png",
+        "secondaryVisual": "mac-panel",
+        "transforms": {
+          "caption": {
+            "x": 92,
+            "y": 120,
+            "width": 1136,
+            "height": 560,
+            "rotation": 0,
+            "zIndex": 5
+          },
+          "deviceSecondary": {
+            "x": 80,
+            "y": 690,
+            "width": 1160,
+            "height": 998,
+            "rotation": -2,
+            "zIndex": 2
+          },
+          "device": {
+            "x": 360,
+            "y": 1370,
+            "width": 650,
+            "height": 1324,
+            "rotation": 3,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "iphone-status",
+        "layout": "device-bottom",
+        "label": {},
+        "headline": {
+          "de-DE": "Sieh, wer\ndich braucht.",
+          "en-US": "See who\nneeds you.",
+          "es-ES": "Mira quién\nte necesita.",
+          "es-MX": "Mira quién\nte necesita.",
+          "fr-FR": "Voyez qui\na besoin de vous.",
+          "hi": "देखें किसे\nआपकी ज़रूरत है।",
+          "hu": "Lásd, kinek\nkellesz.",
+          "it": "Scopri chi\nha bisogno di te.",
+          "ja": "対応が必要な\nエージェントがすぐ分かる。",
+          "ko": "누가 기다리는지\n바로 확인하세요.",
+          "no": "Se hvem\nsom trenger deg.",
+          "pl": "Zobacz, kto\nCię potrzebuje.",
+          "pt-BR": "Veja quem\nprecisa de você.",
+          "pt-PT": "Veja quem\nprecisa de si.",
+          "ru": "Сразу видно,\nкому вы нужны.",
+          "sv": "Se vem\nsom behöver dig.",
+          "th": "ดูว่าใคร\nกำลังรอคุณ",
+          "tr": "Sana kimin\nihtiyacı var gör.",
+          "uk": "Одразу видно,\nкому ви потрібні.",
+          "vi": "Biết ai\nđang cần bạn.",
+          "zh-Hans": "谁在等你，\n一眼就知道。"
+        },
+        "screenshot": "/screenshots/apple/iphone/01.png",
+        "transforms": {
+          "caption": {
+            "x": 100,
+            "y": 140,
+            "width": 1120,
+            "height": 600,
+            "rotation": 0,
+            "zIndex": 4
+          },
+          "device": {
+            "x": 210,
+            "y": 930,
+            "width": 900,
+            "height": 1834,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "iphone-sessions",
+        "layout": "device-top",
+        "label": {},
+        "headline": {
+          "de-DE": "Jede Sitzung\nauf einen Blick.",
+          "en-US": "Every session\nat a glance.",
+          "es-ES": "Cada sesión\nde un vistazo.",
+          "es-MX": "Cada sesión\nde un vistazo.",
+          "fr-FR": "Chaque session\nen un coup d’œil.",
+          "hi": "हर सेशन\nएक नज़र में।",
+          "hu": "Minden munkamenet\negy pillantásra.",
+          "it": "Ogni sessione\na colpo d’occhio.",
+          "ja": "すべてのセッションを\nひと目で確認。",
+          "ko": "모든 세션을\n한눈에 확인.",
+          "no": "Alle økter\nmed ett blikk.",
+          "pl": "Każda sesja\nw jednym widoku.",
+          "pt-BR": "Cada sessão\nem uma tela.",
+          "pt-PT": "Cada sessão\nnum só olhar.",
+          "ru": "Все сессии\nкак на ладони.",
+          "sv": "Varje session\nmed en blick.",
+          "th": "ทุกเซสชัน\nในหน้าจอเดียว",
+          "tr": "Her oturum\ntek bakışta.",
+          "uk": "Усі сесії\nяк на долоні.",
+          "vi": "Mọi phiên làm việc\ntrong một màn hình.",
+          "zh-Hans": "所有会话，\n一屏尽览。"
+        },
+        "screenshot": "/screenshots/apple/iphone/02.png",
+        "inverted": true,
+        "transforms": {
+          "caption": {
+            "x": 100,
+            "y": 2140,
+            "width": 1120,
+            "height": 560,
+            "rotation": 0,
+            "zIndex": 4
+          },
+          "device": {
+            "x": 210,
+            "y": -120,
+            "width": 900,
+            "height": 1834,
+            "rotation": -2,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "iphone-usage",
+        "layout": "hero",
+        "label": {},
+        "headline": {
+          "de-DE": "Nutzung prüfen,\nbevor Limits greifen.",
+          "en-US": "Track usage\nbefore limits hit.",
+          "es-ES": "Controla el uso\nantes del límite.",
+          "es-MX": "Revisa el uso\nantes del límite.",
+          "fr-FR": "Suivez l’usage\navant la limite.",
+          "hi": "लिमिट से पहले\nउपयोग देखें।",
+          "hu": "Kövesd a használatot\na korlát előtt.",
+          "it": "Controlla l’uso\nprima del limite.",
+          "ja": "上限に達する前に\n使用状況を確認。",
+          "ko": "한도 전에\n사용량 확인.",
+          "no": "Følg bruken\nfør grensen nås.",
+          "pl": "Śledź użycie\nprzed limitem.",
+          "pt-BR": "Acompanhe o uso\nantes do limite.",
+          "pt-PT": "Acompanhe a utilização\nantes do limite.",
+          "ru": "Следите за расходом\nдо лимита.",
+          "sv": "Följ användningen\ninnan gränsen nås.",
+          "th": "เช็กการใช้งาน\nก่อนถึงขีดจำกัด",
+          "tr": "Limitten önce\nkullanımı takip et.",
+          "uk": "Стежте за використанням\nдо ліміту.",
+          "vi": "Theo dõi mức dùng\ntrước khi chạm giới hạn.",
+          "zh-Hans": "达到限额前，\n先看使用情况。"
+        },
+        "screenshot": "/screenshots/apple/iphone/03.png",
+        "transforms": {
+          "caption": {
+            "x": 90,
+            "y": 120,
+            "width": 1140,
+            "height": 600,
+            "rotation": 0,
+            "zIndex": 4
+          },
+          "device": {
+            "x": 550,
+            "y": 980,
+            "width": 900,
+            "height": 1834,
+            "rotation": 2,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "iphone-overview",
+        "layout": "device-top",
+        "label": {},
+        "headline": {
+          "de-DE": "Alle Agenten.\nEine klare Ansicht.",
+          "en-US": "All agents.\nOne clear view.",
+          "es-ES": "Todos los agentes.\nUna sola vista.",
+          "es-MX": "Todos tus agentes.\nEn una vista.",
+          "fr-FR": "Tous vos agents.\nUne seule vue.",
+          "hi": "सभी एजेंट।\nएक साफ़ नज़र।",
+          "hu": "Minden ügynök.\nEgy tiszta nézet.",
+          "it": "Tutti gli agenti.\nUna sola vista.",
+          "ja": "全エージェントを\nひとつの画面で。",
+          "ko": "모든 에이전트를\n하나의 화면에서.",
+          "no": "Alle agenter.\nÉn tydelig visning.",
+          "pl": "Wszyscy agenci.\nJeden czytelny widok.",
+          "pt-BR": "Todos os agentes.\nUma visão clara.",
+          "pt-PT": "Todos os agentes.\nUma vista clara.",
+          "ru": "Все агенты.\nОдин ясный экран.",
+          "sv": "Alla agenter.\nEn tydlig vy.",
+          "th": "เอเจนต์ทั้งหมด\nในมุมมองเดียว",
+          "tr": "Tüm ajanlar.\nTek bir görünüm.",
+          "uk": "Усі агенти.\nОдин чіткий екран.",
+          "vi": "Tất cả agent.\nMột góc nhìn rõ ràng.",
+          "zh-Hans": "所有智能体，\n尽在一个视图。"
+        },
+        "screenshot": "/screenshots/apple/iphone/04.png",
+        "transforms": {
+          "caption": {
+            "x": 110,
+            "y": 2080,
+            "width": 1100,
+            "height": 590,
+            "rotation": 0,
+            "zIndex": 4
+          },
+          "device": {
+            "x": 170,
+            "y": -120,
+            "width": 900,
+            "height": 1834,
+            "rotation": -2,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "iphone-resets",
+        "layout": "device-bottom",
+        "label": {},
+        "headline": {
+          "de-DE": "Reset-Zeiten.\nImmer im Blick.",
+          "en-US": "Know when\nlimits reset.",
+          "es-ES": "Sabe cuándo\nse reinician los límites.",
+          "es-MX": "Anticipa el reinicio\nde tus límites.",
+          "fr-FR": "Sachez quand\nles limites se réinitialisent.",
+          "hi": "जानें लिमिट\nकब रीसेट होगी।",
+          "hu": "Tudd, mikor\nnullázódik a keret.",
+          "it": "Sai quando\ni limiti si azzerano.",
+          "ja": "リセット時刻を\nすぐ確認。",
+          "ko": "한도 초기화 시간을\n미리 확인.",
+          "no": "Vit når\ngrensene nullstilles.",
+          "pl": "Wiedz, kiedy\nlimity się odnowią.",
+          "pt-BR": "Saiba quando\nos limites reiniciam.",
+          "pt-PT": "Saiba quando\nos limites reiniciam.",
+          "ru": "Знайте, когда\nобновятся лимиты.",
+          "sv": "Se när\ngränserna återställs.",
+          "th": "รู้เวลา\nรีเซ็ตขีดจำกัด",
+          "tr": "Limitlerin ne zaman\nyenileneceğini bil.",
+          "uk": "Знайте, коли\nоновляться ліміти.",
+          "vi": "Biết khi nào\ngiới hạn đặt lại.",
+          "zh-Hans": "限额何时重置，\n随时掌握。"
+        },
+        "screenshot": "/screenshots/apple/iphone/05.png",
+        "transforms": {
+          "caption": {
+            "x": 100,
+            "y": 130,
+            "width": 1120,
+            "height": 600,
+            "rotation": 0,
+            "zIndex": 4
+          },
+          "device": {
+            "x": 230,
+            "y": 940,
+            "width": 860,
+            "height": 1753,
+            "rotation": 1,
+            "zIndex": 3
+          }
+        }
+      }
+    ],
+    "ipad": [
+      {
+        "id": "ipad-hero",
+        "layout": "two-devices",
+        "label": {
+          "en": "MAC + iCLOUD + IPAD"
+        },
+        "headline": {
+          "de-DE": "Deine Mac-Agenten.\nÜberall.",
+          "en-US": "Your Mac agents.\nAnywhere.",
+          "es-ES": "Tus agentes del Mac.\nEstés donde estés.",
+          "es-MX": "Tus agentes de Mac.\nDonde estés.",
+          "fr-FR": "Vos agents Mac.\nPartout avec vous.",
+          "hi": "आपके Mac एजेंट।\nहर जगह।",
+          "hu": "Mac-agenseid.\nBárhol.",
+          "it": "I tuoi agenti Mac.\nOvunque.",
+          "ja": "Macのエージェントを\nどこからでも。",
+          "ko": "Mac 에이전트를\n어디서나 확인.",
+          "no": "Mac-agentene dine.\nUansett hvor du er.",
+          "pl": "Twoi agenci na Macu.\nGdziekolwiek jesteś.",
+          "pt-BR": "Seus agentes no Mac.\nDe qualquer lugar.",
+          "pt-PT": "Os seus agentes Mac.\nOnde quer que esteja.",
+          "ru": "Ваши агенты на Mac.\nГде бы вы ни были.",
+          "sv": "Dina Mac-agenter.\nVar du än är.",
+          "th": "เอเจนต์บน Mac ของคุณ\nได้จากทุกที่",
+          "tr": "Mac ajanların.\nHer yerden yanında.",
+          "uk": "Ваші агенти на Mac.\nДе б ви не були.",
+          "vi": "Các agent trên Mac.\nỞ bất cứ đâu.",
+          "zh-Hans": "Mac 上的智能体。\n随时随地查看。"
+        },
+        "screenshot": "/screenshots/apple/ipad/00.png",
+        "screenshotSecondary": "/screenshots/apple/shared/mac-dashboard.png",
+        "secondaryVisual": "mac-panel",
+        "transforms": {
+          "caption": {
+            "x": 180,
+            "y": 105,
+            "width": 2392,
+            "height": 510,
+            "rotation": 0,
+            "zIndex": 5
+          },
+          "deviceSecondary": {
+            "x": 120,
+            "y": 720,
+            "width": 1440,
+            "height": 1239,
+            "rotation": -2,
+            "zIndex": 2
+          },
+          "device": {
+            "x": 1270,
+            "y": 760,
+            "width": 1420,
+            "height": 1065,
+            "rotation": 2,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "ipad-status",
+        "layout": "split-landscape",
+        "label": {},
+        "headline": {
+          "de-DE": "Sieh, wer\ndich braucht.",
+          "en-US": "See who\nneeds you.",
+          "es-ES": "Mira quién\nte necesita.",
+          "es-MX": "Mira quién\nte necesita.",
+          "fr-FR": "Voyez qui\na besoin de vous.",
+          "hi": "देखें किसे\nआपकी ज़रूरत है।",
+          "hu": "Lásd, kinek\nkellesz.",
+          "it": "Scopri chi\nha bisogno di te.",
+          "ja": "対応が必要な\nエージェントがすぐ分かる。",
+          "ko": "누가 기다리는지\n바로 확인하세요.",
+          "no": "Se hvem\nsom trenger deg.",
+          "pl": "Zobacz, kto\nCię potrzebuje.",
+          "pt-BR": "Veja quem\nprecisa de você.",
+          "pt-PT": "Veja quem\nprecisa de si.",
+          "ru": "Сразу видно,\nкому вы нужны.",
+          "sv": "Se vem\nsom behöver dig.",
+          "th": "ดูว่าใคร\nกำลังรอคุณ",
+          "tr": "Sana kimin\nihtiyacı var gör.",
+          "uk": "Одразу видно,\nкому ви потрібні.",
+          "vi": "Biết ai\nđang cần bạn.",
+          "zh-Hans": "谁在等你，\n一眼就知道。"
+        },
+        "screenshot": "/screenshots/apple/ipad/01.png",
+        "transforms": {
+          "caption": {
+            "x": 130,
+            "y": 520,
+            "width": 930,
+            "height": 960,
+            "rotation": 0,
+            "zIndex": 4
+          },
+          "device": {
+            "x": 1120,
+            "y": 330,
+            "width": 1530,
+            "height": 1148,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "ipad-resets",
+        "layout": "device-top",
+        "label": {},
+        "headline": {
+          "de-DE": "Reset-Zeiten.\nImmer im Blick.",
+          "en-US": "Know when\nlimits reset.",
+          "es-ES": "Sabe cuándo\nse reinician los límites.",
+          "es-MX": "Anticipa el reinicio\nde tus límites.",
+          "fr-FR": "Sachez quand\nles limites se réinitialisent.",
+          "hi": "जानें लिमिट\nकब रीसेट होगी।",
+          "hu": "Tudd, mikor\nnullázódik a keret.",
+          "it": "Sai quando\ni limiti si azzerano.",
+          "ja": "リセット時刻を\nすぐ確認。",
+          "ko": "한도 초기화 시간을\n미리 확인.",
+          "no": "Vit når\ngrensene nullstilles.",
+          "pl": "Wiedz, kiedy\nlimity się odnowią.",
+          "pt-BR": "Saiba quando\nos limites reiniciam.",
+          "pt-PT": "Saiba quando\nos limites reiniciam.",
+          "ru": "Знайте, когда\nобновятся лимиты.",
+          "sv": "Se när\ngränserna återställs.",
+          "th": "รู้เวลา\nรีเซ็ตขีดจำกัด",
+          "tr": "Limitlerin ne zaman\nyenileneceğini bil.",
+          "uk": "Знайте, коли\nоновляться ліміти.",
+          "vi": "Biết khi nào\ngiới hạn đặt lại.",
+          "zh-Hans": "限额何时重置，\n随时掌握。"
+        },
+        "screenshot": "/screenshots/apple/ipad/02.png",
+        "inverted": true,
+        "transforms": {
+          "caption": {
+            "x": 1660,
+            "y": 500,
+            "width": 930,
+            "height": 980,
+            "rotation": 0,
+            "zIndex": 4
+          },
+          "device": {
+            "x": 120,
+            "y": 330,
+            "width": 1450,
+            "height": 1088,
+            "rotation": -2,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "ipad-usage",
+        "layout": "split-landscape",
+        "label": {},
+        "headline": {
+          "de-DE": "Nutzung prüfen,\nbevor Limits greifen.",
+          "en-US": "Track usage\nbefore limits hit.",
+          "es-ES": "Controla el uso\nantes del límite.",
+          "es-MX": "Revisa el uso\nantes del límite.",
+          "fr-FR": "Suivez l’usage\navant la limite.",
+          "hi": "लिमिट से पहले\nउपयोग देखें।",
+          "hu": "Kövesd a használatot\na korlát előtt.",
+          "it": "Controlla l’uso\nprima del limite.",
+          "ja": "上限に達する前に\n使用状況を確認。",
+          "ko": "한도 전에\n사용량 확인.",
+          "no": "Følg bruken\nfør grensen nås.",
+          "pl": "Śledź użycie\nprzed limitem.",
+          "pt-BR": "Acompanhe o uso\nantes do limite.",
+          "pt-PT": "Acompanhe a utilização\nantes do limite.",
+          "ru": "Следите за расходом\nдо лимита.",
+          "sv": "Följ användningen\ninnan gränsen nås.",
+          "th": "เช็กการใช้งาน\nก่อนถึงขีดจำกัด",
+          "tr": "Limitten önce\nkullanımı takip et.",
+          "uk": "Стежте за використанням\nдо ліміту.",
+          "vi": "Theo dõi mức dùng\ntrước khi chạm giới hạn.",
+          "zh-Hans": "达到限额前，\n先看使用情况。"
+        },
+        "screenshot": "/screenshots/apple/ipad/03.png",
+        "transforms": {
+          "caption": {
+            "x": 130,
+            "y": 510,
+            "width": 930,
+            "height": 980,
+            "rotation": 0,
+            "zIndex": 4
+          },
+          "device": {
+            "x": 1130,
+            "y": 320,
+            "width": 1510,
+            "height": 1133,
+            "rotation": 1,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "ipad-sessions",
+        "layout": "device-bottom",
+        "label": {},
+        "headline": {
+          "de-DE": "Jede Sitzung\nauf einen Blick.",
+          "en-US": "Every session\nat a glance.",
+          "es-ES": "Cada sesión\nde un vistazo.",
+          "es-MX": "Cada sesión\nde un vistazo.",
+          "fr-FR": "Chaque session\nen un coup d’œil.",
+          "hi": "हर सेशन\nएक नज़र में।",
+          "hu": "Minden munkamenet\negy pillantásra.",
+          "it": "Ogni sessione\na colpo d’occhio.",
+          "ja": "すべてのセッションを\nひと目で確認。",
+          "ko": "모든 세션을\n한눈에 확인.",
+          "no": "Alle økter\nmed ett blikk.",
+          "pl": "Każda sesja\nw jednym widoku.",
+          "pt-BR": "Cada sessão\nem uma tela.",
+          "pt-PT": "Cada sessão\nnum só olhar.",
+          "ru": "Все сессии\nкак на ладони.",
+          "sv": "Varje session\nmed en blick.",
+          "th": "ทุกเซสชัน\nในหน้าจอเดียว",
+          "tr": "Her oturum\ntek bakışta.",
+          "uk": "Усі сесії\nяк на долоні.",
+          "vi": "Mọi phiên làm việc\ntrong một màn hình.",
+          "zh-Hans": "所有会话，\n一屏尽览。"
+        },
+        "screenshot": "/screenshots/apple/ipad/04.png",
+        "transforms": {
+          "caption": {
+            "x": 1650,
+            "y": 500,
+            "width": 940,
+            "height": 980,
+            "rotation": 0,
+            "zIndex": 4
+          },
+          "device": {
+            "x": 100,
+            "y": 330,
+            "width": 1470,
+            "height": 1103,
+            "rotation": -1,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "ipad-context",
+        "layout": "split-landscape",
+        "label": {},
+        "headline": {
+          "de-DE": "Details und Kontext.\nIn einer Ansicht.",
+          "en-US": "Details and context.\nOne clear view.",
+          "es-ES": "Detalles y contexto.\nEn una sola vista.",
+          "es-MX": "Detalles y contexto.\nEn una sola vista.",
+          "fr-FR": "Détails et contexte.\nDans une seule vue.",
+          "hi": "विवरण और संदर्भ।\nएक साफ़ नज़र।",
+          "hu": "Részletek és háttér.\nEgy tiszta nézet.",
+          "it": "Dettagli e contesto.\nIn una sola vista.",
+          "ja": "詳細も全体像も\nひとつの画面で。",
+          "ko": "세부 정보와 흐름을\n한 화면에서.",
+          "no": "Detaljer og sammenheng.\nI én tydelig visning.",
+          "pl": "Szczegóły i kontekst.\nJeden czytelny widok.",
+          "pt-BR": "Detalhes e contexto.\nEm uma visão clara.",
+          "pt-PT": "Detalhes e contexto.\nNuma vista clara.",
+          "ru": "Детали и контекст.\nНа одном экране.",
+          "sv": "Detaljer och sammanhang.\nI en tydlig vy.",
+          "th": "ทั้งรายละเอียดและภาพรวม\nในมุมมองเดียว",
+          "tr": "Ayrıntı ve bağlam.\nTek bir görünüm.",
+          "uk": "Деталі й контекст.\nНа одному екрані.",
+          "vi": "Chi tiết và bối cảnh.\nTrong một góc nhìn.",
+          "zh-Hans": "细节与全局，\n尽在一个视图。"
+        },
+        "screenshot": "/screenshots/apple/ipad/05.png",
+        "transforms": {
+          "caption": {
+            "x": 130,
+            "y": 500,
+            "width": 940,
+            "height": 980,
+            "rotation": 0,
+            "zIndex": 4
+          },
+          "device": {
+            "x": 1120,
+            "y": 330,
+            "width": 1530,
+            "height": 1148,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        }
+      }
+    ],
+    "android": [],
+    "android-7": [],
+    "android-10": [],
+    "feature-graphic": []
+  },
+  "crossScreenMockupsByDevice": {
+    "iphone": [],
+    "ipad": [],
+    "android": [],
+    "android-7": [],
+    "android-10": [],
+    "feature-graphic": []
+  }
+}
