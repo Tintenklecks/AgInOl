@@ -18,6 +18,24 @@ default_platform(:ios)
 require "tempfile"
 require "shellwords"
 require "json"
+require "deliver/upload_metadata"
+
+# Fastlane 2.237.0 fetches App Store review details even when no review
+# attachment is configured. New apps can return "No data" for that optional
+# relationship, which should not fail an otherwise valid metadata upload.
+module AgInOlDeliverReviewAttachmentGuard
+  def review_attachment_file(version)
+    super
+  rescue RuntimeError => error
+    raise unless error.message == "No data" && !options[:app_review_attachment_file]
+
+    FastlaneCore::UI.important("No App Store review detail exists; skipping review attachment cleanup.")
+  end
+end
+
+unless Deliver::UploadMetadata.ancestors.include?(AgInOlDeliverReviewAttachmentGuard)
+  Deliver::UploadMetadata.prepend(AgInOlDeliverReviewAttachmentGuard)
+end
 
 platform :ios do
   before_all do
@@ -74,18 +92,36 @@ platform :ios do
     run_deliver_download("download_screenshots")
   end
 
-  desc "Upload all local metadata and screenshots to App Store Connect"
-  lane :upload_all do
+  desc "Upload all local metadata to App Store Connect"
+  lane :upload_metadata do
     deliver(
       metadata_path: File.join(__dir__, "metadata"),
-      screenshots_path: File.join(__dir__, "screenshots"),
       skip_binary_upload: true,
       skip_metadata: false,
+      skip_screenshots: true,
+      submit_for_review: false,
+      automatic_release: false,
+      force: true
+    )
+  end
+
+  desc "Upload all local screenshots to App Store Connect"
+  lane :upload_screenshots do
+    deliver(
+      screenshots_path: File.join(__dir__, "screenshots"),
+      skip_binary_upload: true,
+      skip_metadata: true,
       skip_screenshots: false,
       overwrite_screenshots: true,
       submit_for_review: false,
       automatic_release: false,
       force: true
     )
+  end
+
+  desc "Upload all local metadata and screenshots to App Store Connect"
+  lane :upload_all do
+    upload_metadata
+    upload_screenshots
   end
 end
