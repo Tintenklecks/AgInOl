@@ -19,7 +19,7 @@ Overlay". The two do not agree — see *Uncertain or Needs Verification*.
 | AgInOl | macOS | 26.5 | Mac (menu-bar app, `LSUIElement = YES`) |
 | AgInOl Companion | iOS / iPadOS | 26.5 | iPhone and iPad (`TARGETED_DEVICE_FAMILY = 1,2`) |
 
-Both targets are at `MARKETING_VERSION = 1.0`, `CURRENT_PROJECT_VERSION = 1`.
+Both targets are at `MARKETING_VERSION = 1.0`, `CURRENT_PROJECT_VERSION = 2`.
 
 The Mac app has no Dock icon and no main window; it lives in the menu bar
 and manages a floating panel. The iPhone build supports portrait and both
@@ -27,14 +27,16 @@ landscape orientations; iPad adds upside-down portrait.
 
 ## Core Purpose
 
-Show, at a glance and without switching windows, what every locally
-installed AI coding agent is doing right now and how much of each
-provider's usage allowance has been consumed.
+Show, at a glance and without switching windows, what every supported AI
+coding agent on the user's Mac is doing right now, whether any agent is
+waiting for input, and how much of each provider's usage allowance has been
+consumed.
 
-The Mac app reads the agents' own on-disk session logs and renders them as
-a hardware-style deck that floats above all other windows. The iOS
-companion mirrors that state so the same information is available away
-from the desk.
+The Mac app reads the agents' on-disk session logs and renders them as a
+hardware-style deck that floats above other windows. It also publishes a
+read-only snapshot through iCloud. The iPhone and iPad companion mirrors that
+snapshot, so the same status is available beside the Mac, elsewhere in the
+building, or hundreds of kilometres away.
 
 ## User Pain Point
 
@@ -52,9 +54,11 @@ inside each vendor's own tooling, if at all.
 
 ## Main User Benefit
 
-One always-visible surface that answers "is anything waiting for me?" and
-"how much budget is left?" for every agent at once — without touching a
-terminal, and without sending any data anywhere by default.
+One clear answer to "is anything working or waiting for me?" and "how much
+budget is left?" for every supported agent at once. On the Mac, the answer is
+always visible without interrupting work. On iPhone or iPad, it remains
+available from anywhere with internet access — whether the user is close to
+the Mac or 500 km away.
 
 ## Feature Overview
 
@@ -73,10 +77,10 @@ terminal, and without sending any data anywhere by default.
 - Menu-bar item to show and hide the deck.
 - Double-click to tuck the panel to the screen edge; click the sliver to
   bring it back.
-- Offline by default; an explicit opt-in enables live vendor usage
-  endpoints.
-- iOS/iPadOS companion mirroring the deck over iCloud, with a data-age
-  indicator.
+- Vendor usage endpoints are off by default; an explicit opt-in enables them.
+  iCloud deck mirroring is a separate sync path and remains active.
+- Read-only iPhone/iPad companion that shows Mac agent status over iCloud from
+  nearby or far away, with an always-visible data-age indicator.
 
 ## Detailed Feature Discussion
 
@@ -152,11 +156,14 @@ one page per agent, and one page per usage metric.
 
 ### Privacy and network posture
 
-`AppSettings.onlineAccess` defaults to **off**. With it off the app is
-entirely local: it reads files under the user's home directory and makes
-no network calls, and no Keychain prompt appears. Turning it on lets the
-collectors call the vendors' usage endpoints using the credentials the
-CLIs have already stored.
+`AppSettings.onlineAccess` defaults to **off**. With it off, collectors read
+files under the user's home directory and make no network calls to AI vendors;
+no Keychain prompt appears. Turning it on lets collectors call vendor usage
+endpoints using credentials the CLIs have already stored.
+
+That toggle does not disable companion sync. The Mac app publishes the reduced
+deck snapshot to iCloud key-value storage independently, so "online access off"
+means "vendor lookups off", not "all network traffic off".
 
 The macOS target is built with `ENABLE_APP_SANDBOX = NO`, which is what
 allows it to read the agent directories.
@@ -186,6 +193,29 @@ The companion is read-only and renders its own adaptive grid rather than
 copying the fixed key layout: an all-agents summary tile, one tile per
 agent, and one per usage metric.
 
+### Required setup and distribution
+
+The iOS app is a companion, not a standalone agent monitor. It cannot inspect
+coding-agent files on an iPhone or iPad and has no useful state until the Mac
+app publishes a snapshot. Before the iOS app can work, the user must:
+
+1. Download the notarized AgInOl Mac app directly from `https://aiia.li`.
+2. Install and run AgInOl on the Mac where the supported coding agents run.
+3. Sign in to iCloud on the Mac and the iPhone or iPad with the **same Apple
+   Account**, with iCloud enabled for both apps.
+4. Keep the Mac app running and the Mac online while current status is needed
+   remotely.
+
+The iOS device does not need to be on the same Wi-Fi or local network as the
+Mac. Distance is not the constraint: iCloud and internet availability are. A
+user can check from next to the Mac or 500 km away. Delivery is not instant in
+all conditions; iCloud key-value updates can take seconds to minutes, and the
+companion displays the snapshot age so the user can judge freshness.
+
+Per the product owner's distribution plan, the iOS/iPadOS companion is intended
+for the Apple App Store. The macOS app is intended as a separately installed,
+notarized direct download from `aiia.li`, outside the Mac App Store.
+
 ## Target Users
 
 - Developers running two or more AI coding agents concurrently.
@@ -193,50 +223,92 @@ agent, and one per usage metric.
   allowance before starting expensive work.
 - People who leave long agent turns running and want to notice
   immediately when one finishes and needs a reply.
-- Users who want local-only monitoring by default.
+- Privacy-conscious users who want vendor endpoint access disabled by default.
 
 Practically it requires at least one supported CLI already installed and
 configured; the app monitors those tools rather than replacing them.
 
 ## Current App Store Style Description
 
-AgInOl puts every AI coding agent on one always-visible panel.
+### iOS / iPadOS App Store description — AgInOl Companion
 
-If you run Claude Code, Codex, OpenCode or Kimi Code — especially more
-than one at a time — you lose track of which one is working, which one
-finished and is quietly waiting for you, and how much of your plan you
-have left. AgInOl answers all three at a glance.
+**Important: AgInOl Companion requires the AgInOl app for Mac. Before this
+companion can work, download AgInOl for Mac from `aiia.li`, install it on the
+Mac where your coding agents run, and keep it running. Your Mac and your iPhone
+or iPad must use the same Apple Account with iCloud enabled.**
 
-The deck floats above your other windows and never steals focus, so it
-sits alongside your terminal instead of interrupting it. Each key shows
-one thing: an agent's live status and how long the current turn has been
-running, or how much of a usage window is spent. When an agent finishes
-and needs your reply, its key turns amber; tap it to acknowledge.
+Know what your AI coding agents are doing even when you are away from your Mac.
+AgInOl Companion shows the status collected by AgInOl for Mac on your iPhone or
+iPad. Check from the next room, while away from the office, or 500 km away —
+the devices do not have to share the same Wi-Fi network.
 
-Build the deck you want. Choose a grid from 2×1 up to 6×4 and assign any
-metric to any key. An optional info bar cycles through the detail behind
-each tile.
+See Claude Code, Codex, OpenCode and Kimi Code together. At a glance, you can
+identify which agents are WORKING, which are idle, and which have finished a
+turn and NEED YOU to provide input. Open a provider to see its sessions,
+project titles, models and elapsed time. Usage tiles show available token and
+rate-limit information, including reset times when provided.
 
-AgInOl reads the session logs the tools already write to your Mac. It
-works fully offline and makes no network calls at all unless you switch
-on live usage lookups yourself.
+The Mac app remains the source of the data. It reads the local session files
+created by supported coding tools and sends a read-only deck snapshot through
+iCloud. The iOS app does not run or control agents and cannot work without the
+Mac app.
 
-The iPhone and iPad companion mirrors your Mac's deck over iCloud, so you
-can check on a long-running agent from another room. It always shows how
-old the data is, so you know what you are looking at.
+Every screen shows how recently the Mac snapshot was captured. iCloud delivery
+can take seconds to minutes, so you can always distinguish recent information
+from an older update.
+
+**Setup**
+
+1. Download, install and open AgInOl for Mac from `aiia.li`.
+2. Run at least one supported coding agent on that Mac.
+3. Use the same Apple Account for iCloud on the Mac and iPhone or iPad.
+4. Open AgInOl Companion to view the Mac's agent deck remotely.
+
+### macOS website/download description — AgInOl for Mac
+
+AgInOl is a floating status deck for AI coding agents on your Mac. It brings
+Claude Code, Codex, OpenCode and Kimi Code together, showing which agents are
+working, idle, not installed, or finished and waiting for your input.
+
+The compact panel stays above other windows without taking keyboard focus from
+your terminal. Each configurable key can show agent status, active time,
+session details, token usage, plan-window usage or an all-agents summary. When
+an agent needs you, AgInOl highlights it so a completed task does not sit
+unnoticed.
+
+AgInOl reads the session data the supported tools already store on your Mac.
+Vendor network lookups are off by default and only run when you explicitly
+enable online usage data.
+
+Pair AgInOl with the iPhone and iPad companion to check your agents when you
+leave the desk. The Mac publishes a read-only status snapshot through iCloud,
+so you can see what is running or waiting whether you are nearby or hundreds of
+kilometres away. Both devices must use the same Apple Account with iCloud
+enabled, and the Mac app must remain running and online for current updates.
+
+AgInOl for Mac will be distributed as a separately installed, notarized direct
+download from `https://aiia.li`, outside the Mac App Store. The iPhone/iPad
+companion is distributed through the Apple App Store.
 
 ## Short Description
 
-A floating menu-bar deck showing live status and usage for your local AI
-coding agents, with an iPhone and iPad companion.
+**iOS / iPadOS:** A read-only iCloud companion for checking which AI coding
+agents on your Mac are working or waiting for you, wherever you are.
+
+**macOS:** A floating agent-status and usage deck for Claude Code, Codex,
+OpenCode and Kimi Code, with remote iPhone/iPad viewing through iCloud.
 
 ## Keywords and Search Terms
 
-`AI agent monitor`, `Claude Code`, `Codex`, `OpenCode`, `Kimi Code`,
-`agent status`, `token usage`, `rate limit`, `usage tracker`, `menu bar`,
-`floating overlay`, `always on top`, `developer tools`, `Stream Deck`,
-`coding assistant dashboard`, `session monitor`, `iCloud sync`,
-`local first`, `privacy`, `macOS utility`
+**iOS / iPadOS:** `AI agent monitor`, `remote agent status`, `Claude Code`,
+`Codex`, `OpenCode`, `Kimi Code`, `agent waiting`, `coding assistant`,
+`developer dashboard`, `iCloud sync`, `Mac companion`, `session monitor`
+
+**macOS / website:** `AI agent monitor`, `Claude Code`, `Codex`, `OpenCode`,
+`Kimi Code`, `agent status`, `token usage`, `rate limit`, `usage tracker`,
+`menu bar`, `floating overlay`, `always on top`, `developer tools`, `coding
+assistant dashboard`, `session monitor`, `iCloud sync`, `local first`,
+`privacy`, `macOS utility`
 
 ## Confirmed Facts
 
@@ -244,7 +316,7 @@ Verified against source in this repository:
 
 - Two targets: macOS `AgInOl` and iOS/iPadOS `AgInOl Companion`.
 - Bundle IDs `de.IBMobile.AgInOl` and `de.IBMobile.AgInOl-Companion`;
-  team `KT43342F9W`; both at version 1.0 (build 1).
+  team `KT43342F9W`; both at version 1.0 (build 2).
 - Deployment targets 26.5 on both platforms; iPad supported.
 - `INFOPLIST_KEY_LSUIElement = YES` — no Dock icon on macOS.
 - `MenuBarExtra` with Show/Hide Deck (⌘D) and Quit (⌘Q).
@@ -265,6 +337,10 @@ Verified against source in this repository:
 - 30-second minimum write interval with change-detection in
   `KVSDeckSyncService`.
 - Companion is read-only; it never writes to the store.
+- The Mac app is the only publisher; it must run to collect and publish new
+  status. Both devices must use the same Apple Account in iCloud to access the
+  shared snapshot.
+- App icon PNGs are configured for both the macOS and iOS targets.
 - `DeckSnapshot.currentVersion = 1`; unknown newer versions are ignored.
 - No StoreKit configuration, no in-app purchases, no localisation
   resources — English strings are hard-coded.
@@ -277,14 +353,14 @@ Verified against source in this repository:
   Information system Olverlay"; the UI footer says "Agentic Information
   Overlay"; `AgInOlApp.swift` says "Agent Information system Overlay".
   Pick one before writing store metadata.
-- **Distribution model is not encoded in the project.** Prior discussion
-  indicated the Mac app ships notarized from a website and the iOS app via
-  the App Store, as two separate App Store records rather than a Universal
-  Purchase. Nothing in the repo records this.
-- **No marketing, support or privacy-policy URLs** exist anywhere in the
-  project. All are required for App Store submission.
-- **No app icon assets appear to be configured** beyond empty
-  `AppIcon.appiconset` placeholders.
+- **Distribution is confirmed by the product owner, not encoded in source.**
+  The iOS/iPadOS companion is intended for the Apple App Store. The Mac app
+  will be a separately installed, notarized direct download from `aiia.li`,
+  outside the Mac App Store.
+- **Support and privacy-policy URLs remain unspecified.** The product owner has
+  identified `aiia.li` as the Mac download site, but the repository does not
+  contain final support or privacy-policy URLs required for App Store
+  submission.
 - **Live-endpoint behaviour is unverified here.** The Claude and Codex
   online paths depend on vendor endpoints and stored CLI credentials, and
   were not exercised.
