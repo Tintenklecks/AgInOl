@@ -101,6 +101,7 @@ platform :ios do
       skip_screenshots: true,
       submit_for_review: false,
       automatic_release: false,
+      run_precheck_before_submit: false,
       force: true
     )
   end
@@ -115,6 +116,7 @@ platform :ios do
       overwrite_screenshots: true,
       submit_for_review: false,
       automatic_release: false,
+      run_precheck_before_submit: false,
       force: true
     )
   end
