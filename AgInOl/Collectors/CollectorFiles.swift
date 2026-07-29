@@ -84,6 +84,22 @@ nonisolated enum CollectorFiles {
         return String(name[range]).lowercased()
     }
 
+    /// A log-derived session title trimmed to one readable line, or nil
+    /// when there is nothing worth showing. Providers that title a
+    /// session from its first prompt can hand over whole sentences.
+    static func shortTitle(_ text: String?, limit: Int = 60) -> String? {
+        let clean = (text ?? "")
+            .replacingOccurrences(of: "\n", with: " ")
+            .trimmingCharacters(in: .whitespaces)
+        guard !clean.isEmpty else { return nil }
+        // Placeholders the CLIs write before a session has a real name.
+        guard !["new session", "untitled", "untitled session"].contains(clean.lowercased()) else {
+            return nil
+        }
+        guard clean.count > limit else { return clean }
+        return clean.prefix(limit).trimmingCharacters(in: .whitespaces) + "…"
+    }
+
     static func processAlive(pid: Int) -> Bool {
         guard pid > 0 else { return false }
         return kill(pid_t(pid), 0) == 0 || errno == EPERM

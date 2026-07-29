@@ -141,10 +141,10 @@ extension SnapshotUsage {
 extension SnapshotAgentStatus {
     var label: String {
         switch self {
-        case .working:  "WORKING"
-        case .needsYou: "NEED YOU"
-        case .idle:     "IDLE"
-        case .offline:  "NOT FOUND"
+        case .working:  String(localized: "WORKING")
+        case .needsYou: String(localized: "NEED YOU")
+        case .idle:     String(localized: "IDLE")
+        case .offline:  String(localized: "NOT FOUND")
         }
     }
 }
@@ -154,9 +154,9 @@ extension SnapshotAgent {
     /// session caption so both platforms word it identically.
     var sessionCaption: String {
         switch status {
-        case .working:  "\(sessions) active"
-        case .needsYou: "\(sessions) attention"
-        case .idle:     "\(sessions) open"
+        case .working:  String(localized: "\(sessions) active")
+        case .needsYou: String(localized: "\(sessions) attention")
+        case .idle:     String(localized: "\(sessions) open")
         case .offline:  ""
         }
     }

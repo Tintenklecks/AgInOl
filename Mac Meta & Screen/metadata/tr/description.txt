@@ -1,0 +1,25 @@
+Geçerli pencereden ayrılmadan hangi yapay zekâ kodlama ajanlarının çalıştığını veya sizi beklediğini görün.
+
+AgInOl, doğrudan dağıtılan noter onaylı bir Mac menü çubuğu uygulamasıdır:
+https://aiia.li/download/aginol.zip
+
+Yüzen deste diğer pencerelerin üzerinde kalırken terminalin klavye odağını almaz. Aynı anda çalışan birden fazla ajanın durumunu tek bakışta anlayın.
+
+TÜM AJANLAR İÇİN TEK DESTE
+• Claude Code, Codex, OpenCode ve Kimi Code'u izleyin
+• ÇALIŞIYOR, SİZİ BEKLİYOR, BOŞTA ve BULUNAMADI durumlarını ayırın
+• Açık oturumları, projeleri, modelleri ve geçen süreyi görün
+• Token, plan limiti, maliyet ve varsa sıfırlanma zamanlarını inceleyin
+• Yanıt bekleyen ajanı gördüğünüzü onaylayın
+
+DESTENİZİ ÖZELLEŞTİRİN
+• 2 × 1 ile 6 × 4 arasında ızgara seçin
+• Her tuşa durum, kullanım, özet, saat veya bilgi atayın
+• Ayrıntılar için bilgi döngüsünü kullanın
+• Paneli ekran kenarına gizleyip tek tıkla geri getirin
+
+YEREL VERİ VE AÇIK AĞ DENETİMİ
+AgInOl, desteklenen araçların Mac'e kaydettiği oturum dosyalarını okur. Sağlayıcıların çevrimiçi kullanım sorguları varsayılan olarak kapalıdır. Companion için salt okunur deste görüntüleri iCloud ile eşzamanlanmaya devam eder.
+
+IPHONE VEYA IPAD'DEN KONTROL EDİN
+AgInOl Companion ile yüzlerce kilometre uzaktan bile neyin çalıştığını veya beklediğini görün. Cihazlar aynı Apple Hesabı ve iCloud'u kullanmalıdır; güncel veriler için Mac uygulaması açık, Mac çevrimiçi kalmalıdır.

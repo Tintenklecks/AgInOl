@@ -1,0 +1,6 @@
+Bản phát hành đầu tiên của AgInOl Companion.
+
+• Xem tác nhân đang chạy, không hoạt động hoặc chờ dữ liệu nhập
+• Mở chi tiết phiên và mức sử dụng
+• Kiểm tra nhanh độ mới của bản chụp
+• Nhận trạng thái chỉ đọc từ AgInOl cho Mac qua iCloud

@@ -1,0 +1,7 @@
+Erste direkt vertriebene Version von AgInOl für Mac.
+
+• Vier unterstützte Coding-Tools in einem Deck überwachen
+• Arbeitende, inaktive, wartende und nicht gefundene Agenten erkennen
+• Sitzungs- und Nutzungsdetails prüfen
+• Tastenraster und Infoleiste konfigurieren
+• Schreibgeschützten Status über iCloud an iPhone und iPad senden

@@ -1,0 +1,6 @@
+First release of AgInOl Companion.
+
+• View agents that are working, idle, or waiting for input
+• Open session and usage details
+• Check snapshot freshness at a glance
+• Receive read-only status from AgInOl for Mac through iCloud

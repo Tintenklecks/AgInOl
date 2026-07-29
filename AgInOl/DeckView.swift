@@ -3,7 +3,7 @@
 //  AgInOl
 //
 //  The AgInOl deck: a hardware-style panel with a configurable grid of
-//  colored key tiles, an info-bar screen, and two round touch points.
+//  colored key tiles and a full-width info-bar screen.
 //
 
 import SwiftUI
@@ -16,8 +16,7 @@ private enum DeckMetrics {
     static let bezelPaddingH: CGFloat = 34
     static let bezelPaddingTop: CGFloat = 32
     static let bezelPaddingBottom: CGFloat = 18
-    static let infoBarHeight: CGFloat = 62
-    static let touchPointSize: CGFloat = 44
+    static let infoBarHeight: CGFloat = 84
 }
 
 struct DeckView: View {
@@ -30,16 +29,16 @@ struct DeckView: View {
     @State private var pickerProviderID: String?
     @State private var showOnlinePrompt = false
     @State private var showAgentList = false
+    @State private var sheetAgentID: String?
 
     var body: some View {
         VStack(spacing: 0) {
             keyGrid
-            // Below 3 columns the info bar has no usable width left
-            // between the two touch points, so drop the whole row; the
+            // A single-column deck leaves the bar too narrow to read; the
             // settings toggle hides it at any width.
-            if settings.showInfoBar && settings.gridColumns >= 3 {
-                infoRow
-                    .padding(.top, 26)
+            if settings.showInfoBar && settings.gridColumns >= 2 {
+                InfoBarView(model: model)
+                    .padding(.top, 22)
                     .staggered(show: show, delay: 0.48)
             }
             Text("AGINOL - Agentic Information Overlay")
@@ -94,6 +93,13 @@ struct DeckView: View {
         .overlay {
             if showAgentList {
                 agentListOverlay
+            }
+        }
+        .overlay {
+            // Looked up live: the agent's sessions can settle while the
+            // sheet is open, and a stale copy would acknowledge nothing.
+            if let id = sheetAgentID, let agent = model.agent(withID: id) {
+                sessionsOverlay(agent: agent)
             }
         }
         .overlay {
@@ -240,30 +246,32 @@ struct DeckView: View {
             AllAgentsKeyContent(model: model)
         case .claudeUsed, .codexUsed, .opencodeUsage, .kimiUsage:
             if let entry = model.usageEntry(forProvider: assignment.providerID!) {
-                UsageKeyContent(usage: entry)
+                UsageKeyContent(usage: entry, now: model.now)
             }
         case .claudeLeft, .codexLeft:
             if let entry = model.usageEntry(forProvider: assignment.providerID!) {
-                UsageKeyContent(usage: entry, showRemaining: true)
+                UsageKeyContent(usage: entry, showRemaining: true, now: model.now)
             }
         case .claudeSessionUsed:
-            UsageKeyContent(usage: sessionUsage(withID: "claude-session", name: "CLAUDE"))
+            UsageKeyContent(usage: sessionUsage(withID: "claude-session", name: "CLAUDE"),
+                            now: model.now)
         case .claudeSessionLeft:
             UsageKeyContent(usage: sessionUsage(withID: "claude-session", name: "CLAUDE"),
-                            showRemaining: true)
+                            showRemaining: true, now: model.now)
         case .codexSessionUsed:
-            UsageKeyContent(usage: sessionUsage(withID: "codex-session", name: "CODEX"))
+            UsageKeyContent(usage: sessionUsage(withID: "codex-session", name: "CODEX"),
+                            now: model.now)
         case .codexSessionLeft:
             UsageKeyContent(usage: sessionUsage(withID: "codex-session", name: "CODEX"),
-                            showRemaining: true)
+                            showRemaining: true, now: model.now)
         case .claudeSpend:
             if let entry = model.usageEntry(withID: "claude-spend") {
-                UsageKeyContent(usage: entry)
+                UsageKeyContent(usage: entry, now: model.now)
             } else {
                 UsageKeyContent(usage: ProviderUsage(
                     id: "claude-spend", name: "CLAUDE", tint: DeckColor.gray,
                     tileBackground: DeckColor.grayTile, kind: .unavailable(caption: "loading")
-                ))
+                ), now: model.now)
             }
         case .info:
             InfoKeyContent(model: model)
@@ -290,9 +298,14 @@ struct DeckView: View {
             switch assignment {
             case .claudeStatus, .codexStatus, .opencodeStatus, .kimiStatus:
                 if let agent = model.agent(withID: assignment.providerID!) {
-                    model.acknowledge(agent)
                     if let page = model.pageIndex(forAgent: agent.id) {
                         model.infoPageIndex = page
+                    }
+                    // The sheet names every session behind the count —
+                    // and, when some are waiting, asks before silencing
+                    // them, so a stray click never acknowledges.
+                    if !agent.openSessions.isEmpty {
+                        sheetAgentID = agent.id
                     }
                 }
             case .allAgents:
@@ -337,13 +350,13 @@ struct DeckView: View {
     /// OpenUsage-ported providers slot into this list.
     private static let generalOptions: [KeyAssignment] = [.allAgents, .info, .clock, .spacer]
     private static let pickerProviders: [PickerProvider] = [
-        PickerProvider(id: "claude", name: "Claude",
+        PickerProvider(id: "claude", name: String(localized: "Claude"),
                        options: [.claudeStatus, .claudeUsed, .claudeLeft, .claudeSessionUsed, .claudeSessionLeft, .claudeSpend]),
-        PickerProvider(id: "codex", name: "Codex",
+        PickerProvider(id: "codex", name: String(localized: "Codex"),
                        options: [.codexStatus, .codexUsed, .codexLeft, .codexSessionUsed, .codexSessionLeft]),
-        PickerProvider(id: "opencode", name: "OpenCode",
+        PickerProvider(id: "opencode", name: String(localized: "OpenCode"),
                        options: [.opencodeStatus, .opencodeUsage]),
-        PickerProvider(id: "kimi", name: "Kimi",
+        PickerProvider(id: "kimi", name: String(localized: "Kimi"),
                        options: [.kimiStatus, .kimiUsage]),
     ]
 
@@ -518,8 +531,8 @@ struct DeckView: View {
                                     .font(.system(size: 9, weight: .bold))
                                     .foregroundStyle(agent.status.tint)
                             }
-                            Text(agent.status == .offline ? "not installed"
-                                 : agent.models.isEmpty ? "no recent model"
+                            Text(agent.status == .offline ? String(localized: "not installed")
+                                 : agent.models.isEmpty ? String(localized: "no recent model")
                                  : agent.models.joined(separator: " · "))
                                 .font(.system(size: 10, weight: .medium))
                                 .foregroundStyle(.white.opacity(0.5))
@@ -614,21 +627,116 @@ struct DeckView: View {
         }
     }
 
-    // MARK: - Info bar row
+    // MARK: - Sessions sheet
 
-    private var infoRow: some View {
-        HStack(spacing: 18) {
-            TouchPoint(systemImage: "chevron.left") {
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-                    model.advancePage(by: -1)
+    /// Every open session behind an agent key, named and timed. Doubles
+    /// as the acknowledge sheet when some of them are waiting on a reply.
+    private func sessionsOverlay(agent: Agent) -> some View {
+        let close = {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                sheetAgentID = nil
+            }
+        }
+        let waiting = !agent.attention.isEmpty
+        // `sessions` counts every open session; the list itself is capped.
+        let hidden = max(agent.sessions - agent.openSessions.count, 0)
+        return ZStack {
+            Color.black.opacity(0.45)
+                .clipShape(RoundedRectangle(cornerRadius: DeckMetrics.bezelCorner,
+                                            style: .continuous))
+                .onTapGesture(perform: close)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(agent.status.tint)
+                        .frame(width: 8, height: 8)
+                        .shadow(color: agent.status.tint.opacity(0.8), radius: 3)
+                    Text(waiting ? String(localized: "\(agent.name) NEEDS YOU")
+                                 : String(localized: "\(agent.name) \(agent.status.label)"))
+                        .font(.system(size: 10, weight: .heavy))
+                        .tracking(1.5)
+                        .foregroundStyle(.white.opacity(0.6))
+                    Spacer()
+                    CardButton(systemImage: "xmark", action: close)
+                }
+                .padding(.bottom, 8)
+
+                if agent.openSessions.isEmpty {
+                    Text("No open sessions right now.")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.5))
+                        .padding(.bottom, 12)
+                } else {
+                    ForEach(Array(agent.openSessions.enumerated()), id: \.element.id) { index, item in
+                        if index > 0 { HairlineSeparator() }
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Circle()
+                                .fill(item.tint)
+                                .frame(width: 6, height: 6)
+                                .offset(y: -2)
+                            Text(item.title)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.92))
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 6)
+                            if let since = item.since {
+                                Text(DeckModel.elapsed(since: since, now: model.now))
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .monospacedDigit()
+                                    .foregroundStyle(.white.opacity(0.45))
+                            }
+                        }
+                        .padding(.vertical, 8)
+                    }
+                    if hidden > 0 {
+                        Text("+\(hidden) more")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.35))
+                            .padding(.top, 6)
+                    }
+                    Spacer().frame(height: 4)
+                }
+
+                HStack(spacing: 8) {
+                    Text(waiting ? String(localized: "Later") : String(localized: "Close"))
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(Capsule().fill(.white.opacity(0.08)))
+                        .contentShape(Capsule())
+                        .onTapGesture(perform: close)
+                    Spacer()
+                    // Only the waiting sessions can be silenced, so the
+                    // button appears only when there are some.
+                    if waiting {
+                        Text("Acknowledge")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.black.opacity(0.85))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(Capsule().fill(DeckColor.amber))
+                            .contentShape(Capsule())
+                            .onTapGesture {
+                                model.acknowledge(agent)
+                                close()
+                            }
+                    }
                 }
             }
-            InfoBarView(model: model)
-            TouchPoint(systemImage: "chevron.right") {
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-                    model.advancePage(by: 1)
-                }
-            }
+            .padding(16)
+            .frame(width: 270)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(white: 0.09))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(.white.opacity(0.1), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
+            )
+            .transition(.scale(scale: 0.92).combined(with: .opacity))
         }
     }
 }
@@ -714,6 +822,12 @@ struct AgentKeyContent: View {
     let agent: Agent
     @State private var pulse = false
 
+    /// Offline keys explain themselves; the rest only earn the third
+    /// line once there is a real session to name.
+    private var showsHint: Bool {
+        agent.status == .offline || !agent.openSessions.isEmpty
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 5) {
@@ -752,11 +866,16 @@ struct AgentKeyContent: View {
                 .font(.system(size: 9, weight: .semibold))
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(0.85))
-                .padding(.bottom, agent.status == .needsYou || agent.status == .offline ? 0 : 10)
-            if agent.status == .needsYou || agent.status == .offline {
+                .padding(.bottom, showsHint ? 0 : 10)
+            if showsHint {
+                // Names the session the count refers to (project or
+                // session title from the provider's own logs); the sheet
+                // the key opens lists the rest.
                 Text(agent.hintCaption)
                     .font(.system(size: 7.5, weight: .medium))
                     .foregroundStyle(.white.opacity(0.38))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                     .padding(.top, 2)
                     .padding(.bottom, 10)
             }
@@ -819,6 +938,8 @@ struct UsageKeyContent: View {
     let usage: ProviderUsage
     /// Show the unused remainder ("83% · 7d left") instead of consumption.
     var showRemaining = false
+    /// Live clock tick from the parent so the reset countdown updates every second.
+    var now: Date = Date()
 
     private var displayValue: String {
         guard showRemaining, case .percent(let fraction, _) = usage.kind else {
@@ -828,10 +949,25 @@ struct UsageKeyContent: View {
     }
 
     private var displayCaption: String {
-        guard showRemaining, case .percent(_, let window) = usage.kind else {
-            return usage.caption
+        var base: String
+        if showRemaining, case .percent(_, let window) = usage.kind {
+            base = String(localized: "\(window) left")
+        } else {
+            base = usage.caption
         }
-        return "\(window) left"
+        if let resetsAt = usage.resetsAt, resetsAt > now {
+            base += " • \(Self.resetTag(resetsAt, now: now))"
+        }
+        return base
+    }
+
+    private static func resetTag(_ resetsAt: Date, now: Date) -> String {
+        let total = Int(resetsAt.timeIntervalSince(now))
+        guard total > 0 else { return String(localized: "↺ now") }
+        let m = total / 60, h = m / 60, d = h / 24
+        if d >= 1 { let r = h % 24; return r > 0 ? String(localized: "↺ \(d)d \(r)h") : String(localized: "↺ \(d)d") }
+        if h >= 1 { let r = m % 60; return r > 0 ? String(localized: "↺ \(h)h \(r)m") : String(localized: "↺ \(h)h") }
+        return String(localized: "↺ \(max(m, 1))m")
     }
 
     private var displayBarFraction: Double? {
@@ -884,6 +1020,8 @@ struct UsageKeyContent: View {
                 .font(.system(size: 8.5, weight: .semibold))
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(0.7))
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
                 .padding(.bottom, 10)
         }
         .padding(.horizontal, 6)
@@ -932,22 +1070,47 @@ struct InfoBarView: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(DeckColor.screen)
             if let page = model.currentPage {
                 pageView(page)
-                    .padding(.horizontal, 18)
+                    .padding(.horizontal, 20)
+                    .padding(.trailing, 46)   // room for the page stepper
                     .id(page.id)
                     .transition(.asymmetric(
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .move(edge: .leading).combined(with: .opacity)
                     ))
             }
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(.white.opacity(0.06), lineWidth: 1)
         }
         .frame(height: DeckMetrics.infoBarHeight)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        // The flanking touch points are gone: the screen itself pages
+        // forward, with the stepper for stepping back.
+        .onTapGesture { page(by: 1) }
+        .overlay(alignment: .trailing) { stepper }
+    }
+
+    /// Tiny in-screen page stepper — replaces the two round buttons that
+    /// used to flank the bar.
+    private var stepper: some View {
+        VStack(spacing: 2) {
+            StepperChevron(systemImage: "chevron.up") { page(by: -1) }
+            Text("\(model.infoPageIndex + 1)/\(max(model.infoPages.count, 1))")
+                .font(.system(size: 8, weight: .bold))
+                .monospacedDigit()
+                .foregroundStyle(.white.opacity(0.32))
+            StepperChevron(systemImage: "chevron.down") { page(by: 1) }
+        }
+        .padding(.trailing, 12)
+    }
+
+    private func page(by delta: Int) {
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+            model.advancePage(by: delta)
+        }
     }
 
     @ViewBuilder
@@ -957,7 +1120,7 @@ struct InfoBarView: View {
             HStack(alignment: .center, spacing: 0) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("ALL AGENTS")
-                        .font(.system(size: 14, weight: .heavy))
+                        .font(.system(size: 16, weight: .heavy))
                         .foregroundStyle(.white.opacity(0.95))
                     HStack(spacing: 12) {
                         CountUnit(value: model.openSessions, label: String(localized: "OPEN"), tint: DeckColor.cyan)
@@ -974,36 +1137,54 @@ struct InfoBarView: View {
                     .layoutPriority(-1)
             }
         case .agent(let agent):
-            // Same two-row shape as the summary page: heading line on
-            // top, details underneath — fits the narrow 3-column bar.
+            // Heading line on top, live details underneath, and — when
+            // the agent is waiting — what it is waiting on.
             HStack(alignment: .center, spacing: 0) {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 8) {
                         Circle()
                             .fill(agent.status.tint)
-                            .frame(width: 8, height: 8)
+                            .frame(width: 9, height: 9)
                             .shadow(color: agent.status.tint.opacity(0.8), radius: 3)
                         Text(agent.name)
-                            .font(.system(size: 14, weight: .heavy))
+                            .font(.system(size: 16, weight: .heavy))
                             .foregroundStyle(.white.opacity(0.95))
                             .lineLimit(1)
                         Text(agent.status.label)
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(agent.status.tint)
                             .lineLimit(1)
                     }
                     HStack(spacing: 8) {
                         if agent.status == .working, let start = agent.startedAt {
                             Text(DeckModel.elapsed(since: start, now: model.now))
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.system(size: 12, weight: .semibold))
                                 .monospacedDigit()
                                 .foregroundStyle(.white.opacity(0.6))
                         }
                         Text(agent.sessionCaption)
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(size: 12, weight: .semibold))
                             .monospacedDigit()
                             .foregroundStyle(.white.opacity(0.6))
                             .lineLimit(1)
+                        if agent.status != .offline, let modelName = agent.models.first {
+                            Text(modelName)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.4))
+                                .lineLimit(1)
+                        }
+                    }
+                    // Third line: the sessions themselves. Amber while
+                    // any of them is waiting on a reply.
+                    if !agent.openSessions.isEmpty {
+                        let waiting = !agent.attention.isEmpty
+                        let shown = waiting ? agent.attention : agent.openSessions
+                        Text(shown.map(\.title).joined(separator: " · "))
+                            .font(.system(size: 10.5, weight: .medium))
+                            .foregroundStyle(waiting ? DeckColor.amber.opacity(0.85)
+                                                     : .white.opacity(0.45))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
                 }
                 Spacer(minLength: 0)
@@ -1289,31 +1470,26 @@ struct HairlineSeparator: View {
     }
 }
 
-/// Round capacitive touch point flanking the info bar.
-struct TouchPoint: View {
+/// Flat chevron of the info bar's own page stepper.
+struct StepperChevron: View {
     let systemImage: String
     let action: () -> Void
 
     @GestureState private var isPressed = false
 
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(Color(white: 0.10))
-            Circle()
-                .strokeBorder(.white.opacity(0.08), lineWidth: 1)
-            Image(systemName: systemImage)
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(.white.opacity(isPressed ? 0.95 : 0.55))
-        }
-        .frame(width: DeckMetrics.touchPointSize, height: DeckMetrics.touchPointSize)
-        .scaleEffect(isPressed ? 0.9 : 1.0)
-        .animation(.spring(response: 0.25, dampingFraction: 0.6), value: isPressed)
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .updating($isPressed) { _, state, _ in state = true }
-                .onEnded { _ in action() }
-        )
+        Image(systemName: systemImage)
+            .font(.system(size: 9, weight: .bold))
+            .foregroundStyle(.white.opacity(isPressed ? 0.9 : 0.35))
+            .frame(width: 22, height: 15)
+            .contentShape(Rectangle())
+            .scaleEffect(isPressed ? 0.86 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: isPressed)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .updating($isPressed) { _, state, _ in state = true }
+                    .onEnded { _ in action() }
+            )
     }
 }
 

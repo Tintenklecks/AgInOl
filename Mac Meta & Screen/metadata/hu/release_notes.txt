@@ -1,0 +1,7 @@
+Az AgInOl for Mac első közvetlen kiadása.
+
+• Négy támogatott kódolóeszköz egyetlen fedélzeten
+• Dolgozó, tétlen, figyelmet kérő és nem található állapot
+• Munkamenet- és használati részletek
+• Beállítható gombrács és információs sáv
+• Csak olvasható állapot küldése iCloudon iPhone-ra és iPadre

@@ -1,0 +1,1 @@
+mi,figyelő,kódolás,állapot,munkamenet,folyamat,irányítópult,használat,token,fejlesztő

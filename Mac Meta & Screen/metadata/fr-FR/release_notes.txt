@@ -1,0 +1,7 @@
+Première version d’AgInOl pour Mac distribuée directement.
+
+• Suivi de quatre outils compatibles dans un seul tableau
+• États actif, inactif, en attente et introuvable
+• Détails des sessions et de l’utilisation
+• Grille et barre d’information configurables
+• État en lecture seule envoyé via iCloud à l’iPhone et l’iPad

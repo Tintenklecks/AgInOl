@@ -1,0 +1,7 @@
+Första direktdistribuerade versionen av AgInOl för Mac.
+
+• Fyra verktyg som stöds i en panel
+• Status för arbetar, inaktiv, behöver svar och hittades inte
+• Information om sessioner och användning
+• Konfigurerbart rutnät och informationsfält
+• Skrivskyddad status till iPhone och iPad via iCloud

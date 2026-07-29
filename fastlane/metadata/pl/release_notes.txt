@@ -1,0 +1,6 @@
+Pierwsze wydanie AgInOl Companion.
+
+• Podgląd agentów pracujących, bezczynnych i czekających na dane
+• Szczegóły sesji i wykorzystania
+• Szybka kontrola aktualności migawki
+• Odbieranie przez iCloud stanu tylko do odczytu z AgInOl for Mac

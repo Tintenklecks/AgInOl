@@ -71,7 +71,9 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
             sessions.append(SessionSnapshot(
                 key: key, id: id, state: state, isOpen: state != .idle,
                 activityAt: file.mtime, completionAt: completionAt,
-                model: info.model
+                model: info.model,
+                title: info.cwd.map { ($0 as NSString).lastPathComponent }
+                    ?? String(localized: "session \(id.prefix(6))")
             ))
             if rateLimits == nil, let limits = info.rateLimits { rateLimits = limits }
         }
@@ -80,7 +82,7 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
             if let rateLimits {
                 usage = Self.usageFrom(rateLimits: rateLimits)
             } else if usage.updatedAt == nil {
-                usage = UsageSnapshot(updatedAt: now, error: "No Codex usage event found")
+                usage = UsageSnapshot(updatedAt: now, error: String(localized: "No Codex usage event found"))
             }
             let needsLive = context.allowNetwork && now.timeIntervalSince(liveFetchedAt) > 300
             if needsLive { liveFetchedAt = now }
@@ -106,6 +108,8 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
         var lifeAt = Date.distantPast
         var rateLimits: [String: Any]?
         var model: String?
+        /// Working directory from the rollout's session_meta header.
+        var cwd: String?
     }
 
     private func tailInfo(for file: FileStamp) -> Tail {
@@ -126,6 +130,7 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
             }
             if info.rateLimits == nil { info.rateLimits = cached.info.rateLimits }
             if info.model == nil { info.model = cached.info.model }
+            if info.cwd == nil { info.cwd = cached.info.cwd }
         }
         lock.withLock {
             tailCache[file.path] = (file.size, file.mtime, info)
@@ -142,6 +147,11 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
             if let anyPayload = event["payload"] as? [String: Any],
                let model = anyPayload["model"] as? String, !model.isEmpty {
                 tail.model = model
+            }
+            if event["type"] as? String == "session_meta",
+               let payload = event["payload"] as? [String: Any],
+               let cwd = payload["cwd"] as? String, !cwd.isEmpty {
+                tail.cwd = cwd
             }
             guard event["type"] as? String == "event_msg",
                   let payload = event["payload"] as? [String: Any],
@@ -241,7 +251,7 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
     }
 
     static func label(minutes: Double?) -> String {
-        guard let minutes, minutes.isFinite else { return "limit" }
+        guard let minutes, minutes.isFinite else { return String(localized: "limit") }
         let value = Int(minutes)
         if value % 10_080 == 0 { return "\(value / 10_080)w" }
         if value % 1_440 == 0 { return "\(value / 1_440)d" }

@@ -1,0 +1,25 @@
+Scopri quali agenti di programmazione IA lavorano o aspettano il tuo intervento senza lasciare la finestra attiva.
+
+AgInOl è un’app notarizzata per la barra dei menu del Mac, distribuita direttamente da:
+https://aiia.li/download/aginol.zip
+
+Il pannello flottante rimane sopra le altre finestre senza togliere il focus della tastiera al terminale. Segui più agenti in parallelo con un solo sguardo.
+
+UN PANNELLO PER I TUOI AGENTI
+• Monitora Claude Code, Codex, OpenCode e Kimi Code
+• Distingui IN ESECUZIONE, RICHIEDE TE, INATTIVO e NON TROVATO
+• Consulta sessioni aperte, progetti, modelli e tempo trascorso
+• Controlla token, limiti del piano, costi e orari di ripristino disponibili
+• Conferma di aver visto un agente in attesa
+
+PERSONALIZZA IL PANNELLO
+• Scegli una griglia da 2 × 1 a 6 × 4
+• Assegna stato, utilizzo, riepilogo, orologio o informazioni a ogni tasto
+• Attiva il carosello informativo per maggiori dettagli
+• Nascondi il pannello sul bordo dello schermo e richiamalo con un clic
+
+DATI LOCALI E CONTROLLO DELLA RETE
+AgInOl legge i file di sessione già memorizzati sul Mac dagli strumenti compatibili. Le richieste online ai fornitori sono disattivate per impostazione predefinita. Le istantanee in sola lettura continuano a sincronizzarsi via iCloud per l’app Companion.
+
+CONTROLLA DA IPHONE O IPAD
+Con AgInOl Companion puoi vedere chi lavora o attende anche a centinaia di chilometri. I dispositivi devono usare lo stesso Apple Account con iCloud; per dati aggiornati, l’app Mac deve rimanere aperta e il Mac online.

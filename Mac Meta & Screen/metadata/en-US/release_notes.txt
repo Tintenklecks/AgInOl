@@ -1,0 +1,7 @@
+First direct-distribution release of AgInOl for Mac.
+
+• Monitor four supported coding-agent tools in one deck
+• See working, idle, attention-needed, and not-found states
+• Review session and usage details
+• Configure the key grid and info bar
+• Publish read-only status to the iPhone and iPad companion through iCloud

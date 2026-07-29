@@ -1,0 +1,6 @@
+Première version d’AgInOl Companion.
+
+• Affichage des agents actifs, inactifs ou en attente d’instructions
+• Détails des sessions et de l’utilisation
+• Âge de l’instantané visible en un coup d’œil
+• Réception via iCloud de l’état en lecture seule d’AgInOl pour Mac

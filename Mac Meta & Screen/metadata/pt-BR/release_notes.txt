@@ -1,0 +1,7 @@
+Primeira versão do AgInOl para Mac com distribuição direta.
+
+• Quatro ferramentas compatíveis em um só painel
+• Estados trabalhando, inativo, precisa de atenção e não encontrado
+• Detalhes de sessões e uso
+• Grade de teclas e barra informativa configuráveis
+• Status somente leitura enviado ao iPhone e iPad pelo iCloud

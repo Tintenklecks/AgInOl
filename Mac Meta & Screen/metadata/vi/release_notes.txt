@@ -1,0 +1,7 @@
+Bản AgInOl cho Mac đầu tiên được phân phối trực tiếp.
+
+• Theo dõi bốn công cụ lập trình được hỗ trợ trên một bảng
+• Trạng thái đang chạy, không hoạt động, cần phản hồi và không tìm thấy
+• Chi tiết phiên và mức sử dụng
+• Tùy chỉnh lưới phím và thanh thông tin
+• Gửi trạng thái chỉ đọc tới iPhone và iPad qua iCloud

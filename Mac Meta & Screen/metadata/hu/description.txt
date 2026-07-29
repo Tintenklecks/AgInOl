@@ -1,0 +1,25 @@
+Az aktuális ablak elhagyása nélkül láthatod, mely MI-kódoló ügynökök dolgoznak, és melyek várnak rád.
+
+Az AgInOl egy hitelesített, menüsávban futó Mac-alkalmazás, amely közvetlenül innen tölthető le:
+https://aiia.li/download/aginol.zip
+
+Lebegő kezelőfelülete a többi ablak felett marad, de nem veszi el a billentyűzet fókuszát a termináltól. Több párhuzamos ügynök állapota egy pillantás alatt áttekinthető.
+
+EGY FEDÉLZET MINDEN ÜGYNÖKHÖZ
+• Claude Code, Codex, OpenCode és Kimi Code figyelése
+• DOLGOZIK, RÁD VÁR, TÉTLEN és NEM TALÁLHATÓ állapot
+• Nyitott munkamenetek, projektek, modellek és eltelt idő
+• Tokenek, csomagkorlátok, költségek és visszaállítási idők
+• A választ kérő ügynök nyugtázása
+
+SZABD TESTRE
+• 2 × 1 és 6 × 4 közötti rács
+• Állapot, használat, összegzés, óra vagy információ rendelése a gombokhoz
+• Választható információs körhinta
+• A panel a képernyő szélére rejthető, majd egy kattintással visszahívható
+
+HELYI ADATOK, ÁTLÁTHATÓ HÁLÓZATI VEZÉRLÉS
+Az AgInOl a támogatott eszközök Macen tárolt munkamenetfájljait olvassa. A szolgáltatói online lekérdezések alapból ki vannak kapcsolva. A Companion számára írásvédett állapotképek továbbra is szinkronizálódnak iCloudon.
+
+ELLENŐRZÉS IPHONE-RÓL VAGY IPADRŐL
+Az AgInOl Companion több száz kilométerről is megmutatja, mi dolgozik vagy vár válaszra. Mindkét eszközön ugyanaz az Apple-fiók és bekapcsolt iCloud szükséges; az aktuális adatokhoz a Mac app maradjon nyitva és online.

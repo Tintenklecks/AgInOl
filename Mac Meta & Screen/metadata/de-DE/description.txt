@@ -1,0 +1,25 @@
+Sieh sofort, welche KI-Coding-Agenten arbeiten oder auf deine Eingabe warten – ohne das aktuelle Fenster zu verlassen.
+
+AgInOl ist eine notarisierte Menüleisten-App für den Mac und wird direkt hier angeboten:
+https://aiia.li/download/aginol.zip
+
+Das schwebende Deck bleibt über anderen Fenstern, ohne deinem Terminal den Tastaturfokus zu nehmen. So behältst du mehrere parallel laufende Agenten im Blick.
+
+EIN DECK FÜR DEINE AGENTEN
+• Claude Code, Codex, OpenCode und Kimi Code überwachen
+• ARBEITET, BRAUCHT DICH, INAKTIV und NICHT GEFUNDEN unterscheiden
+• Offene Sitzungen, Projektnamen, Modelle und Laufzeiten sehen
+• Token, Planlimits, Kosten und Rücksetzzeiten prüfen, sofern verfügbar
+• Wartende Agenten als gesehen bestätigen
+
+DEIN DECK, DEINE ANORDNUNG
+• Raster von 2 × 1 bis 6 × 4 wählen
+• Status, Nutzung, Übersichten, Uhr oder Infoseiten einzelnen Tasten zuweisen
+• Optionale Infoleiste für zusätzliche Details nutzen
+• Panel am Bildschirmrand verstauen und mit einem Klick zurückholen
+
+LOKALE DATEN, KLARE NETZWERKSTEUERUNG
+AgInOl liest Sitzungsdateien, die unterstützte Tools bereits auf deinem Mac speichern. Online-Abfragen bei Anbietern sind standardmäßig deaktiviert. Schreibgeschützte Deck-Snapshots werden für die Companion-App weiterhin über iCloud synchronisiert.
+
+AUF IPHONE UND IPAD NACHSEHEN
+Mit AgInOl Companion siehst du auch fern vom Schreibtisch, welche Agenten arbeiten oder warten – selbst Hunderte Kilometer entfernt. Beide Geräte brauchen denselben Apple Account mit aktiviertem iCloud; für aktuelle Daten müssen Mac-App und Mac online bleiben.

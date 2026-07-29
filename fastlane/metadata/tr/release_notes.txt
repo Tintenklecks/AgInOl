@@ -1,0 +1,6 @@
+AgInOl Companion'ın ilk sürümü.
+
+• Çalışan, boşta olan veya giriş bekleyen ajanları görüntüleyin
+• Oturum ve kullanım ayrıntılarını açın
+• Anlık görüntünün güncelliğini hızla kontrol edin
+• AgInOl for Mac'ten iCloud üzerinden salt okunur durum alın

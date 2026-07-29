@@ -1,0 +1,7 @@
+Pierwsze bezpośrednie wydanie AgInOl dla Maca.
+
+• Cztery obsługiwane narzędzia w jednym panelu
+• Stany pracuje, bezczynny, wymaga uwagi i nie znaleziono
+• Szczegóły sesji i wykorzystania
+• Konfigurowalna siatka i pasek informacji
+• Stan tylko do odczytu wysyłany przez iCloud na iPhone’a i iPada

@@ -112,9 +112,9 @@ private struct CompanionDetailView: View {
 
     private var title: String {
         switch detail {
-        case .summary: "All Agents"
+        case .summary: String(localized: "All Agents")
         case .agent(let agent): agent.name
-        case .usage(let usage): "\(usage.name) Usage"
+        case .usage(let usage): String(localized: "\(usage.name) Usage")
         }
     }
 
@@ -327,13 +327,13 @@ private struct UsageDetails: View {
 
     private static func resetCaption(_ resetsAt: Date, now: Date) -> String {
         let total = max(0, Int(resetsAt.timeIntervalSince(now)))
-        guard total > 0 else { return "Resets now" }
+        guard total > 0 else { return String(localized: "Resets now") }
         let minutes = total / 60
         let hours = minutes / 60
         let days = hours / 24
-        if days > 0 { return "Resets in \(days)d \(hours % 24)h" }
-        if hours > 0 { return "Resets in \(hours)h \(minutes % 60)m" }
-        return "Resets in \(max(minutes, 1))m"
+        if days > 0 { return String(localized: "Resets in \(days)d \(hours % 24)h") }
+        if hours > 0 { return String(localized: "Resets in \(hours)h \(minutes % 60)m") }
+        return String(localized: "Resets in \(max(minutes, 1))m")
     }
 }
 
@@ -378,9 +378,9 @@ private extension SnapshotAgentSession.State {
 
     var label: String {
         switch self {
-        case .working: "WORKING"
-        case .attention: "NEED YOU"
-        case .idle: "IDLE"
+        case .working: String(localized: "WORKING")
+        case .attention: String(localized: "NEED YOU")
+        case .idle: String(localized: "IDLE")
         }
     }
 }
@@ -519,17 +519,20 @@ private struct Tile<Content: View>: View {
 
 private struct EmptyState: View {
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             Image(systemName: "macbook.and.iphone")
                 .font(.largeTitle)
                 .foregroundStyle(DeckColor.gray)
-            Text("No deck yet")
+            Text("No Mac server connection")
                 .font(.headline)
                 .foregroundStyle(.white.opacity(0.8))
-            Text("Open AgInOl on your Mac while signed in\nto the same iCloud account.")
+            Text("Download the Mac app from")
                 .font(.caption)
-                .multilineTextAlignment(.center)
                 .foregroundStyle(.white.opacity(0.5))
+            Link("https://aiia.li/apps/aginol",
+                 destination: URL(string: "https://aiia.li/apps/aginol")!)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(DeckColor.cyan)
         }
         .padding(32)
     }

@@ -1,0 +1,25 @@
+Se vilka AI-kodagenter som arbetar eller väntar på dig utan att lämna det aktiva fönstret.
+
+AgInOl är en notariserad menyradsapp för Mac som distribueras direkt från:
+https://aiia.li/download/aginol.zip
+
+Den flytande panelen ligger över andra fönster utan att ta tangentbordsfokus från terminalen. Få överblick över flera parallella agenter på en gång.
+
+EN PANEL FÖR DINA AGENTER
+• Övervaka Claude Code, Codex, OpenCode och Kimi Code
+• Skilj mellan ARBETAR, BEHÖVER DIG, INAKTIV och HITTADES INTE
+• Se öppna sessioner, projekt, modeller och förfluten tid
+• Kontrollera token, plangränser, kostnader och återställningstider
+• Bekräfta att du har sett en agent som väntar på svar
+
+ANPASSA PANELEN
+• Välj ett rutnät från 2 × 1 till 6 × 4
+• Tilldela status, användning, sammanfattning, klocka eller information till tangenter
+• Aktivera informationskarusellen för fler detaljer
+• Göm panelen vid skärmkanten och hämta tillbaka den med ett klick
+
+LOKALA DATA OCH TYDLIG NÄTVERKSKONTROLL
+AgInOl läser sessionsfiler som verktyg som stöds redan lagrar på Macen. Leverantörernas onlineuppslag är avstängda som standard. Skrivskyddade ögonblicksbilder synkroniseras fortfarande via iCloud till Companion-appen.
+
+KONTROLLERA FRÅN IPHONE ELLER IPAD
+Med AgInOl Companion ser du vad som arbetar eller väntar även hundratals kilometer bort. Enheterna måste använda samma Apple-konto med iCloud; för aktuella data måste Mac-appen vara öppen och Macen online.

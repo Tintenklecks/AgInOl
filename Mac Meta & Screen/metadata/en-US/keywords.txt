@@ -1,0 +1,1 @@
+ai,monitor,coding,status,session,workflow,dashboard,usage,token,developer,overlay,menubar

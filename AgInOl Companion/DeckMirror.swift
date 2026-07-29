@@ -51,12 +51,12 @@ final class DeckMirror {
     }
 
     var ageCaption: String {
-        guard let age else { return "waiting for Mac…" }
+        guard let age else { return String(localized: "waiting for Mac…") }
         let seconds = max(0, Int(age))
         return switch seconds {
-        case ..<45:    "just now"
-        case ..<3600:  "\(seconds / 60) min ago"
-        default:       "\(seconds / 3600) h ago"
+        case ..<45:    String(localized: "just now")
+        case ..<3600:  String(localized: "\(seconds / 60) min ago")
+        default:       String(localized: "\(seconds / 3600) h ago")
         }
     }
 

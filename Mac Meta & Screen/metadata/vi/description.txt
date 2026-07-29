@@ -1,0 +1,25 @@
+Xem tác nhân lập trình AI nào đang chạy hoặc chờ bạn mà không cần rời cửa sổ hiện tại.
+
+AgInOl là ứng dụng thanh menu Mac đã được công chứng, phân phối trực tiếp tại:
+https://aiia.li/download/aginol.zip
+
+Bảng nổi luôn nằm trên các cửa sổ khác nhưng không lấy tiêu điểm bàn phím khỏi Terminal. Nắm được trạng thái của nhiều tác nhân chạy song song trong nháy mắt.
+
+MỘT BẢNG CHO MỌI TÁC NHÂN
+• Theo dõi Claude Code, Codex, OpenCode và Kimi Code
+• Phân biệt ĐANG CHẠY, CẦN BẠN, KHÔNG HOẠT ĐỘNG và KHÔNG TÌM THẤY
+• Xem phiên đang mở, dự án, mô hình và thời gian đã chạy
+• Kiểm tra token, giới hạn gói, chi phí và thời gian đặt lại khi có
+• Xác nhận đã xem tác nhân đang chờ phản hồi
+
+TÙY CHỈNH BẢNG
+• Chọn lưới từ 2 × 1 đến 6 × 4
+• Gán trạng thái, mức dùng, tóm tắt, đồng hồ hoặc thông tin cho từng phím
+• Bật thanh thông tin luân phiên để xem thêm chi tiết
+• Giấu bảng ở cạnh màn hình và gọi lại bằng một lần bấm
+
+DỮ LIỆU CỤC BỘ VÀ KIỂM SOÁT MẠNG
+AgInOl đọc tệp phiên mà các công cụ được hỗ trợ đã lưu trên Mac. Truy vấn trực tuyến tới nhà cung cấp mặc định được tắt. Bản chụp chỉ đọc vẫn đồng bộ qua iCloud tới Companion.
+
+KIỂM TRA TỪ IPHONE HOẶC IPAD
+AgInOl Companion cho biết tác nhân nào đang chạy hoặc chờ dù cách xa hàng trăm kilômét. Hai thiết bị phải dùng cùng Tài khoản Apple và iCloud; để có dữ liệu mới, ứng dụng Mac phải mở và Mac phải trực tuyến.

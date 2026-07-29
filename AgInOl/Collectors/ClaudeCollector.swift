@@ -141,10 +141,26 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
             sessions.append(SessionSnapshot(
                 key: key, id: sessionID, state: state, isOpen: true,
                 activityAt: activityAt, completionAt: completionAt,
-                model: tail.lastModel
+                model: tail.lastModel,
+                title: Self.title(from: raw, sessionID: sessionID)
             ))
         }
         return sessions
+    }
+
+    /// Session label: the CLI's own name when the user set one, else the
+    /// project folder it runs in — a derived name is only a slug of that
+    /// folder, so the folder reads better.
+    static func title(from raw: [String: Any], sessionID: String) -> String {
+        let name = CollectorFiles.shortTitle(raw["name"] as? String)
+        if (raw["nameSource"] as? String) != "derived", let name {
+            return name
+        }
+        if let cwd = raw["cwd"] as? String, !cwd.isEmpty {
+            return (cwd as NSString).lastPathComponent
+        }
+        if let name { return name }
+        return String(localized: "session \(sessionID.prefix(6))")
     }
 
     // MARK: - Tail parsing
@@ -196,7 +212,7 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
                 let code = (response as? HTTPURLResponse)?.statusCode ?? -1
                 if code == 401 || code == 403 { invalidateToken() }
-                throw CollectorError("Claude usage HTTP \(code)")
+                throw CollectorError(String(localized: "Claude usage HTTP \(code)"))
             }
             let body = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
             let limits = (body?["limits"] as? [[String: Any]]) ?? []
@@ -241,7 +257,7 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
            let data = FileManager.default.contents(atPath: configDirectory + "/.credentials.json") {
             token = Self.extractToken(from: data)
         }
-        guard let token else { throw CollectorError("Claude Code OAuth token not found") }
+        guard let token else { throw CollectorError(String(localized: "Claude Code OAuth token not found")) }
         lock.withLock { cachedToken = token }
         return token
     }

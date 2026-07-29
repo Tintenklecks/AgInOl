@@ -19,10 +19,10 @@ enum AgentStatus: String {
 
     var label: String {
         switch self {
-        case .working:  "WORKING"
-        case .needsYou: "NEED YOU"
-        case .idle:     "IDLE"
-        case .offline:  "NOT FOUND"
+        case .working:  String(localized: "WORKING")
+        case .needsYou: String(localized: "NEED YOU")
+        case .idle:     String(localized: "IDLE")
+        case .offline:  String(localized: "NOT FOUND")
         }
     }
 
@@ -45,6 +45,31 @@ enum AgentStatus: String {
     }
 }
 
+/// One live session behind a key, named with whatever title the
+/// provider's own logs reveal (project folder, session title, prompt).
+struct AgentSession: Identifiable {
+    enum State {
+        case working
+        case attention
+        case idle
+    }
+
+    /// The collector's ack key, e.g. "claude:<sessionId>".
+    let id: String
+    let title: String
+    let state: State
+    /// Waiting time for `attention`, last activity otherwise.
+    let since: Date?
+
+    var tint: Color {
+        switch state {
+        case .working:   DeckColor.green
+        case .attention: DeckColor.amber
+        case .idle:      DeckColor.gray
+        }
+    }
+}
+
 struct Agent: Identifiable {
     let id: String
     let name: String
@@ -53,23 +78,41 @@ struct Agent: Identifiable {
     var startedAt: Date?
     /// Models in use, most-recent first, display-shortened.
     var models: [String] = []
+    /// The open sessions behind `sessions`, most interesting first
+    /// (waiting, then working, then idle). Capped by the collector.
+    var openSessions: [AgentSession] = []
 
-    /// "1 active" / "1 attention" / "1 open"
+    /// Sessions demanding a reply — empty unless `needsYou`.
+    var attention: [AgentSession] { openSessions.filter { $0.state == .attention } }
+
+    /// "1 active" / "1 attention" / "1 open". The first two count only
+    /// the sessions in that state, so the number matches what the
+    /// sessions sheet lists; "open" counts them all.
     var sessionCaption: String {
         switch status {
-        case .working:  "\(sessions) active"
-        case .needsYou: "\(sessions) attention"
-        case .idle:     "\(sessions) open"
+        case .working:  String(localized: "\(count(of: .working)) active")
+        case .needsYou: String(localized: "\(count(of: .attention)) attention")
+        case .idle:     String(localized: "\(sessions) open")
         case .offline:  ""
         }
     }
 
+    /// Sessions in one state, falling back to the open count for data
+    /// that carries no session list (pre-collector state, demo seeds).
+    private func count(of state: AgentSession.State) -> Int {
+        let matching = openSessions.filter { $0.state == state }.count
+        return matching > 0 ? matching : sessions
+    }
+
+    /// Third line on the key: which session it is, not how to click it —
+    /// the sheet the key opens lists them all.
     var hintCaption: String {
-        switch status {
-        case .needsYou: "tap to acknowledge"
-        case .offline:  "not installed"
-        default:        "live backend"
+        guard status != .offline else { return String(localized: "not installed") }
+        let shown = status == .needsYou ? attention : openSessions
+        guard let first = shown.first else {
+            return status == .needsYou ? String(localized: "waiting for you") : String(localized: "live backend")
         }
+        return shown.count > 1 ? "\(first.title) +\(shown.count - 1)" : first.title
     }
 }
 
@@ -92,6 +135,8 @@ struct ProviderUsage: Identifiable {
     var kind: Kind
     /// Extra detail shown only on the info-bar page (e.g. Claude's 5h window).
     var secondaryText: String?
+    /// When the limit window resets; shown as a live countdown in the info bar.
+    var resetsAt: Date?
 
     var bigValue: String {
         switch kind {
@@ -148,41 +193,41 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
 
     var displayName: String {
         switch self {
-        case .claudeStatus:   "Claude · status"
-        case .codexStatus:    "Codex · status"
-        case .opencodeStatus: "OpenCode · status"
-        case .kimiStatus:     "Kimi · status"
-        case .allAgents:      "All agents"
-        case .claudeUsed:     "Claude · % used"
-        case .claudeLeft:     "Claude · % left"
-        case .claudeSpend:    "Claude · tokens & cost"
-        case .claudeSessionUsed: "Claude · % used session"
-        case .claudeSessionLeft: "Claude · % left session"
-        case .codexUsed:      "Codex · % used"
-        case .codexLeft:      "Codex · % left"
-        case .codexSessionUsed: "Codex · % used session"
-        case .codexSessionLeft: "Codex · % left session"
-        case .opencodeUsage:  "OpenCode · tokens"
-        case .kimiUsage:      "Kimi · tokens"
-        case .info:           "Info pages"
-        case .clock:          "Clock"
-        case .spacer:         "Empty"
+        case .claudeStatus:   String(localized: "Claude · status")
+        case .codexStatus:    String(localized: "Codex · status")
+        case .opencodeStatus: String(localized: "OpenCode · status")
+        case .kimiStatus:     String(localized: "Kimi · status")
+        case .allAgents:      String(localized: "All agents")
+        case .claudeUsed:     String(localized: "Claude · % used")
+        case .claudeLeft:     String(localized: "Claude · % left")
+        case .claudeSpend:    String(localized: "Claude · tokens & cost")
+        case .claudeSessionUsed: String(localized: "Claude · % used session")
+        case .claudeSessionLeft: String(localized: "Claude · % left session")
+        case .codexUsed:      String(localized: "Codex · % used")
+        case .codexLeft:      String(localized: "Codex · % left")
+        case .codexSessionUsed: String(localized: "Codex · % used session")
+        case .codexSessionLeft: String(localized: "Codex · % left session")
+        case .opencodeUsage:  String(localized: "OpenCode · tokens")
+        case .kimiUsage:      String(localized: "Kimi · tokens")
+        case .info:           String(localized: "Info pages")
+        case .clock:          String(localized: "Clock")
+        case .spacer:         String(localized: "Empty")
         }
     }
 
     /// Short label for the per-provider layer of the key picker.
     var metricLabel: String {
         switch self {
-        case .claudeStatus, .codexStatus, .opencodeStatus, .kimiStatus: "Status"
-        case .claudeUsed, .codexUsed:                      "% used"
-        case .claudeLeft, .codexLeft:                      "% left"
-        case .claudeSessionUsed, .codexSessionUsed:        "% used session"
-        case .claudeSessionLeft, .codexSessionLeft:        "% left session"
-        case .claudeSpend, .opencodeUsage, .kimiUsage:     "Tokens & cost"
-        case .allAgents:                                   "All agents"
-        case .info:                                        "Info pages"
-        case .clock:                                       "Clock"
-        case .spacer:                                      "Empty"
+        case .claudeStatus, .codexStatus, .opencodeStatus, .kimiStatus: String(localized: "Status")
+        case .claudeUsed, .codexUsed:                      String(localized: "% used")
+        case .claudeLeft, .codexLeft:                      String(localized: "% left")
+        case .claudeSessionUsed, .codexSessionUsed:        String(localized: "% used session")
+        case .claudeSessionLeft, .codexSessionLeft:        String(localized: "% left session")
+        case .claudeSpend, .opencodeUsage, .kimiUsage:     String(localized: "Tokens & cost")
+        case .allAgents:                                   String(localized: "All agents")
+        case .info:                                        String(localized: "Info pages")
+        case .clock:                                       String(localized: "Clock")
+        case .spacer:                                      String(localized: "Empty")
         }
     }
 
@@ -423,14 +468,40 @@ final class DeckModel {
     static func demo() -> DeckModel {
         DeckModel(
             agents: [
-                Agent(id: "claude", name: "CLAUDE", status: .working, sessions: 1,
-                      startedAt: Date().addingTimeInterval(-742)),
+                Agent(id: "claude", name: "CLAUDE", status: .working, sessions: 2,
+                      startedAt: Date().addingTimeInterval(-742),
+                      openSessions: [
+                        AgentSession(id: "claude:a", title: "AgInOl", state: .working,
+                                     since: Date().addingTimeInterval(-742)),
+                        AgentSession(id: "claude:b", title: "PUCO App", state: .idle,
+                                     since: Date().addingTimeInterval(-1840)),
+                      ]),
                 Agent(id: "codex", name: "CODEX", status: .needsYou, sessions: 1,
-                      startedAt: Date().addingTimeInterval(-3120)),
+                      startedAt: Date().addingTimeInterval(-3120),
+                      openSessions: [
+                        AgentSession(id: "codex:demo", title: "Stage Rehersal",
+                                     state: .attention,
+                                     since: Date().addingTimeInterval(-96)),
+                      ]),
                 Agent(id: "opencode", name: "OPENCODE", status: .idle, sessions: 1,
-                      startedAt: nil),
-                Agent(id: "kimi", name: "KIMI", status: .working, sessions: 1,
-                      startedAt: Date().addingTimeInterval(-210)),
+                      startedAt: nil,
+                      openSessions: [
+                        AgentSession(id: "opencode:a", title: "refactor the deck view",
+                                     state: .idle,
+                                     since: Date().addingTimeInterval(-5400)),
+                      ]),
+                Agent(id: "kimi", name: "KIMI", status: .working, sessions: 4,
+                      startedAt: Date().addingTimeInterval(-210),
+                      openSessions: [
+                        AgentSession(id: "kimi:a", title: "add mcp for IBKR", state: .working,
+                                     since: Date().addingTimeInterval(-210)),
+                        AgentSession(id: "kimi:b", title: "2ndbrain", state: .idle,
+                                     since: Date().addingTimeInterval(-960)),
+                        AgentSession(id: "kimi:c", title: "invoice parser", state: .idle,
+                                     since: Date().addingTimeInterval(-3200)),
+                        AgentSession(id: "kimi:d", title: "site rebuild", state: .idle,
+                                     since: Date().addingTimeInterval(-8400)),
+                      ]),
             ],
             usage: [
                 ProviderUsage(id: "claude-usage", name: "CLAUDE",

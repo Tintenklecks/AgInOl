@@ -62,11 +62,6 @@
 			path = "AgInOl CompanionUITests";
 			sourceTree = "<group>";
 		};
-		82F1A0011000000100AE6A93 /* AgInOl Shared */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "AgInOl Shared";
-			sourceTree = "<group>";
-		};
 		825DB549300BF0B800DC1644 /* AgInOl */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = AgInOl;
@@ -80,6 +75,11 @@
 		825DB563300BF0BA00DC1644 /* AgInOlUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = AgInOlUITests;
+			sourceTree = "<group>";
+		};
+		82F1A0011000000100AE6A93 /* AgInOl Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "AgInOl Shared";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -338,6 +338,25 @@
 			knownRegions = (
 				en,
 				Base,
+				de,
+				"zh-Hans",
+				es,
+				"pt-PT",
+				"pt-BR",
+				fr,
+				hi,
+				hu,
+				it,
+				ko,
+				nb,
+				pl,
+				ru,
+				sv,
+				th,
+				tr,
+				ja,
+				uk,
+				vi,
 			);
 			mainGroup = 825DB53E300BF0B800DC1644;
 			minimizedProjectReferenceProxies = 1;
@@ -475,6 +494,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "AgInOl Companion/AgInOl Companion.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = KT43342F9W;
@@ -491,7 +511,6 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				CODE_SIGN_ENTITLEMENTS = "AgInOl Companion/AgInOl Companion.entitlements";
 				PRODUCT_BUNDLE_IDENTIFIER = "de.IBMobile.AgInOl-Companion";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -510,6 +529,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "AgInOl Companion/AgInOl Companion.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = KT43342F9W;
@@ -526,7 +546,6 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				CODE_SIGN_ENTITLEMENTS = "AgInOl Companion/AgInOl Companion.entitlements";
 				PRODUCT_BUNDLE_IDENTIFIER = "de.IBMobile.AgInOl-Companion";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -758,6 +777,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = AgInOl/AgInOl.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 5;
@@ -774,7 +794,6 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				CODE_SIGN_ENTITLEMENTS = AgInOl/AgInOl.entitlements;
 				PRODUCT_BUNDLE_IDENTIFIER = de.IBMobile.AgInOl;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -792,6 +811,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = AgInOl/AgInOl.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 5;
@@ -808,7 +828,6 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				CODE_SIGN_ENTITLEMENTS = AgInOl/AgInOl.entitlements;
 				PRODUCT_BUNDLE_IDENTIFIER = de.IBMobile.AgInOl;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;

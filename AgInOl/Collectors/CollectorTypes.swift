@@ -24,6 +24,9 @@ nonisolated struct SessionSnapshot: Sendable {
     var completionAt: Date?
     /// Most recently used model in this session, when the logs reveal it.
     var model: String?
+    /// Human-readable name for this session — the provider's own title
+    /// where it has one, otherwise the working directory it runs in.
+    var title: String?
 }
 
 nonisolated struct UsageWindowSnapshot: Sendable {

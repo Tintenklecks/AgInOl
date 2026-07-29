@@ -36,7 +36,7 @@ nonisolated final class KimiCodeCollector: AgentCollector, @unchecked Sendable {
             guard let indexText = String(data: indexData, encoding: .utf8) else {
                 return ProviderReport(installed: true,
                                       usage: UsageSnapshot(updatedAt: Date(),
-                                                           error: "bad session index encoding"))
+                                                           error: String(localized: "bad session index encoding")))
             }
 
             let sessionEntries = indexText
@@ -77,7 +77,8 @@ nonisolated final class KimiCodeCollector: AgentCollector, @unchecked Sendable {
                     isOpen: true,
                     activityAt: updatedAt,
                     completionAt: nil,
-                    model: modelHint(from: state)
+                    model: modelHint(from: state),
+                    title: sessionTitle(from: state, sessionID: sessionID)
                 ))
 
                 let wirePath = sessionDir + "/agents/main/wire.jsonl"
@@ -111,6 +112,22 @@ nonisolated final class KimiCodeCollector: AgentCollector, @unchecked Sendable {
             return String(prompt.prefix(40))
         }
         return nil
+    }
+
+    /// Session label: Kimi's own title, else the last prompt, else the
+    /// work directory it was started in. Kimi writes "New Session" until
+    /// a session has a real name, which `shortTitle` filters out.
+    private func sessionTitle(from state: [String: Any], sessionID: String) -> String {
+        if let title = CollectorFiles.shortTitle(state["title"] as? String) {
+            return title
+        }
+        if let prompt = CollectorFiles.shortTitle(state["lastPrompt"] as? String) {
+            return prompt
+        }
+        if let dir = state["workDir"] as? String, !dir.isEmpty {
+            return (dir as NSString).lastPathComponent
+        }
+        return "session \(sessionID.prefix(6))"
     }
 
     private func tokenTotals(from path: String, now: Date) -> (Double, Double) {

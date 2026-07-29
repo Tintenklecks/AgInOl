@@ -1,9 +1,4 @@
-//
-//  AgInOl_CompanionUITests.swift
-//  AgInOl CompanionUITests
-//
-//  Created by puco on 20.07.2026.
-//
+
 
 import XCTest
 

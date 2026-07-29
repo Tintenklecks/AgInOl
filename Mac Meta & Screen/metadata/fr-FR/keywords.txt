@@ -1,0 +1,1 @@
+ia,suivi,codage,état,session,flux,tableau,usage,jeton,développeur,fenêtre,menubar

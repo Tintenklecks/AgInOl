@@ -1,0 +1,25 @@
+Se hvilke KI-kodeagenter som jobber eller venter på deg, uten å forlate vinduet du bruker.
+
+AgInOl er en notarisert menylinjeapp for Mac som distribueres direkte fra:
+https://aiia.li/download/aginol.zip
+
+Det flytende panelet ligger over andre vinduer uten å ta tastaturfokus fra terminalen. Få oversikt over flere agenter som kjører samtidig.
+
+ETT PANEL FOR ALLE AGENTENE
+• Overvåk Claude Code, Codex, OpenCode og Kimi Code
+• Skill mellom JOBBER, TRENGER DEG, INAKTIV og IKKE FUNNET
+• Se åpne økter, prosjektnavn, modeller og tidsbruk
+• Kontroller tokener, plangrenser, kostnader og tilbakestillingstid når tilgjengelig
+• Bekreft at du har sett en agent som venter på svar
+
+TILPASS PANELET
+• Velg et rutenett fra 2 × 1 til 6 × 4
+• Tildel status, bruk, sammendrag, klokke eller informasjon til hver tast
+• Bruk informasjonskarusellen for flere detaljer
+• Skjul panelet ved skjermkanten og hent det tilbake med ett klikk
+
+LOKALE DATA OG TYDELIG NETTVERKSKONTROLL
+AgInOl leser øktfiler som støttede verktøy allerede lagrer på Macen. Nettbaserte leverandøroppslag er slått av som standard. Skrivebeskyttede øyeblikksbilder synkroniseres fortsatt via iCloud til Companion-appen.
+
+SJEKK FRA IPHONE ELLER IPAD
+Med AgInOl Companion kan du se hva som jobber eller venter, selv hundrevis av kilometer unna. Begge enhetene må bruke samme Apple-konto med iCloud. Mac-appen må være åpen og Macen på nett for aktuelle data.

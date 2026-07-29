@@ -27,8 +27,8 @@
     "zh-Hans"
   ],
   "locale": "en-US",
-  "device": "iphone",
-  "orientation": "portrait",
+  "device": "ipad",
+  "orientation": "landscape",
   "appIcon": "/app-icon.png",
   "slidesByDevice": {
     "iphone": [
@@ -328,6 +328,7 @@
         }
       }
     ],
+    "android": [],
     "ipad": [
       {
         "id": "ipad-hero",
@@ -625,7 +626,6 @@
         }
       }
     ],
-    "android": [],
     "android-7": [],
     "android-10": [],
     "feature-graphic": []

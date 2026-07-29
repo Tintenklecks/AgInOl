@@ -1,0 +1,7 @@
+Primera versión de distribución directa de AgInOl para Mac.
+
+• Monitorea cuatro herramientas compatibles en un solo panel
+• Distingue estados trabajando, inactivo, necesita atención y no encontrado
+• Consulta sesiones y uso
+• Configura la cuadrícula y la barra informativa
+• Envía por iCloud el estado de solo lectura al iPhone y iPad

@@ -1,0 +1,6 @@
+Primera versión de AgInOl Companion.
+
+• Consulta agentes trabajando, inactivos o esperando instrucciones
+• Abre detalles de sesiones y uso
+• Revisa al instante la vigencia de la captura
+• Recibe por iCloud el estado de solo lectura de AgInOl para Mac

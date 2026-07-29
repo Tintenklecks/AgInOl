@@ -1,0 +1,6 @@
+Første versjon av AgInOl Companion.
+
+• Se agenter som jobber, er inaktive eller venter på svar
+• Åpne detaljer om økter og bruk
+• Sjekk raskt hvor ferskt øyeblikksbildet er
+• Motta skrivebeskyttet status fra AgInOl for Mac via iCloud

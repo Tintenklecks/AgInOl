@@ -1,0 +1,1 @@
+ia,agente,monitor,remoto,programação,sessão,fluxo,painel,utilização,token,programador,sincronização

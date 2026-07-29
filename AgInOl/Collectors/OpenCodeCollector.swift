@@ -59,7 +59,9 @@ nonisolated final class OpenCodeCollector: AgentCollector, @unchecked Sendable {
                 return SessionSnapshot(
                     key: key, id: id, state: state, isOpen: state != .idle,
                     activityAt: activityAt, completionAt: completionAt,
-                    model: row["model_id"] as? String
+                    model: row["model_id"] as? String,
+                    title: CollectorFiles.shortTitle(row["title"] as? String)
+                        ?? String(localized: "session \(id.prefix(6))")
                 )
             }
 
@@ -88,14 +90,14 @@ nonisolated final class OpenCodeCollector: AgentCollector, @unchecked Sendable {
         var db: OpaquePointer?
         guard sqlite3_open_v2(databasePath, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else {
             defer { sqlite3_close(db) }
-            throw CollectorError("OpenCode database could not be opened")
+            throw CollectorError(String(localized: "OpenCode database could not be opened"))
         }
         defer { sqlite3_close(db) }
         sqlite3_busy_timeout(db, 5000)
 
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
-            throw CollectorError("OpenCode query failed: \(String(cString: sqlite3_errmsg(db)))")
+            throw CollectorError(String(localized: "OpenCode query failed: \(String(cString: sqlite3_errmsg(db)))"))
         }
         defer { sqlite3_finalize(statement) }
 

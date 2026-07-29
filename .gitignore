@@ -20,3 +20,8 @@ xcuserdata/
 
 # Claude Code personal overrides
 .claude/settings.local.json
+
+# Fastlane secrets
+fastlane/.env
+fastlane/*.p8
+fastlane/report.xml

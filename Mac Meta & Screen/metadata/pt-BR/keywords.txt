@@ -1,0 +1,1 @@
+ia,monitor,código,status,sessão,fluxo,painel,uso,token,desenvolvedor,sobreposição,menu

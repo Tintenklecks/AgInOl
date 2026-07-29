@@ -1,0 +1,6 @@
+Erste Version von AgInOl Companion.
+
+• Arbeitende, inaktive und auf Eingaben wartende Agenten anzeigen
+• Sitzungs- und Nutzungsdetails öffnen
+• Aktualität des Snapshots auf einen Blick prüfen
+• Schreibgeschützten Status von AgInOl für Mac über iCloud empfangen

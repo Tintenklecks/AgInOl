@@ -1,0 +1,7 @@
+Første direkte distribuerte versjon av AgInOl for Mac.
+
+• Fire støttede kodeverktøy i ett panel
+• Statusene jobber, inaktiv, trenger svar og ikke funnet
+• Detaljer om økter og bruk
+• Konfigurerbart tasterutenett og informasjonsfelt
+• Skrivebeskyttet status sendt til iPhone og iPad via iCloud

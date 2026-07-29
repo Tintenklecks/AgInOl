@@ -14,6 +14,44 @@
 			<key>orderHint</key>
 			<integer>0</integer>
 		</dict>
+		<key>AgInOlUITests.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>8224F234300E875200AE6A93</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>8224F240300E875400AE6A93</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>8224F24A300E875400AE6A93</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>825DB546300BF0B800DC1644</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>825DB555300BF0BA00DC1644</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>825DB55F300BF0BA00DC1644</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
 	</dict>
 </dict>
 </plist>

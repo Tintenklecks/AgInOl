@@ -129,7 +129,8 @@ final class CollectorHub {
                 status: status,
                 sessions: open.count,
                 startedAt: workingSince[id],
-                models: models.prefix(3).map(ModelName.short)
+                models: models.prefix(3).map(ModelName.short),
+                openSessions: Self.sessionList(open)
             ))
             usage.append(Self.usageTile(providerID: id, name: collector.displayName, report: report))
             if let sessionTile = Self.sessionUsageTile(providerID: id, name: collector.displayName, report: report) {
@@ -153,6 +154,45 @@ final class CollectorHub {
         // Mirror outward on every cycle; the transport decides what is
         // actually worth sending.
         sync.publish(DeckSnapshot.make(agents: agents, usage: usage))
+    }
+
+    // MARK: - Session mapping
+
+    /// The provider's open sessions as key rows: waiting first, then
+    /// working, then idle, each newest-first. Bounded because a provider
+    /// like Kimi keeps every session it has ever recorded open.
+    private static func sessionList(_ sessions: [SessionSnapshot]) -> [AgentSession] {
+        func rank(_ state: SessionState) -> Int {
+            switch state {
+            case .attention: 0
+            case .working:   1
+            case .idle:      2
+            }
+        }
+        func mapped(_ state: SessionState) -> AgentSession.State {
+            switch state {
+            case .working:   .working
+            case .attention: .attention
+            case .idle:      .idle
+            }
+        }
+        return sessions
+            .sorted {
+                rank($0.state) != rank($1.state)
+                    ? rank($0.state) < rank($1.state)
+                    : ($0.completionAt ?? $0.activityAt) > ($1.completionAt ?? $1.activityAt)
+            }
+            .prefix(12)
+            .map { session in
+                AgentSession(
+                    id: session.key,
+                    title: session.title ?? String(localized: "session \(session.id.prefix(6))"),
+                    state: mapped(session.state),
+                    // Attention rows count how long the reply has been
+                    // owed; the others show time since last activity.
+                    since: session.completionAt ?? session.activityAt
+                )
+            }
     }
 
     // MARK: - Usage mapping
@@ -188,6 +228,7 @@ final class CollectorHub {
             if let session = windows.first(where: { $0.label == "5h" }), let p = session.percent {
                 tileModel.secondaryText = "5h \(Int((p * 100).rounded()))%"
             }
+            tileModel.resetsAt = weekly.resetsAt
             return tileModel
 
         case "codex":
@@ -204,6 +245,7 @@ final class CollectorHub {
             if sorted.count > 1, let p = sorted[1].percent {
                 tileModel.secondaryText = "\(sorted[1].label) \(Int((p * 100).rounded()))%"
             }
+            tileModel.resetsAt = main.resetsAt
             return tileModel
 
         case "kimi":
@@ -238,9 +280,11 @@ final class CollectorHub {
         case "claude":
             guard let session = windows.first(where: { $0.label == "5h" }),
                   let percent = session.percent else { return nil }
-            return ProviderUsage(id: "claude-session", name: name,
-                                 tint: DeckColor.orange, tileBackground: DeckColor.brownTile,
-                                 kind: .percent(fraction: percent, window: "5h"))
+            var tile = ProviderUsage(id: "claude-session", name: name,
+                                     tint: DeckColor.orange, tileBackground: DeckColor.brownTile,
+                                     kind: .percent(fraction: percent, window: "5h"))
+            tile.resetsAt = session.resetsAt
+            return tile
 
         case "codex":
             // Codex's short (≈5h) window only — newer CLIs log just the
@@ -250,9 +294,11 @@ final class CollectorHub {
                 .filter { ($0.periodSeconds ?? 0) > 0 && $0.periodSeconds! <= 24 * 3600 }
                 .min { ($0.periodSeconds ?? 0) < ($1.periodSeconds ?? 0) }
             guard let session, let percent = session.percent else { return nil }
-            return ProviderUsage(id: "codex-session", name: name,
-                                 tint: DeckColor.cyan, tileBackground: DeckColor.blueTile,
-                                 kind: .percent(fraction: percent, window: session.label))
+            var tile = ProviderUsage(id: "codex-session", name: name,
+                                     tint: DeckColor.cyan, tileBackground: DeckColor.blueTile,
+                                     kind: .percent(fraction: percent, window: session.label))
+            tile.resetsAt = session.resetsAt
+            return tile
 
         default:
             return nil

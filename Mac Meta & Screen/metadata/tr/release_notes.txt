@@ -1,0 +1,7 @@
+AgInOl for Mac'in ilk doğrudan dağıtım sürümü.
+
+• Desteklenen dört kodlama aracını tek destede izleme
+• Çalışıyor, boşta, yanıt bekliyor ve bulunamadı durumları
+• Oturum ve kullanım ayrıntıları
+• Yapılandırılabilir tuş ızgarası ve bilgi çubuğu
+• iCloud ile iPhone ve iPad'e salt okunur durum gönderme
