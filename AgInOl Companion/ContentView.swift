@@ -12,6 +12,7 @@ import SwiftUI
 struct ContentView: View {
     @State private var mirror = DeckMirror()
     @State private var detail: CompanionDetail?
+    @State private var reviewCoordinator = AppReviewCoordinator()
 
     private let columns = [GridItem(.adaptive(minimum: 150), spacing: 12)]
 
@@ -48,7 +49,18 @@ struct ContentView: View {
             }
             .padding(12)
         }
-        .background(DeckColor.screen.ignoresSafeArea())
+        .background {
+#if DEBUG
+            DeckColor.screen
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture(count: 4) {
+                    reviewCoordinator.requestReviewForDebug()
+                }
+#else
+            DeckColor.screen.ignoresSafeArea()
+#endif
+        }
         .safeAreaInset(edge: .bottom) { freshnessBar }
         .overlay { if mirror.snapshot == nil { EmptyState() } }
         .onAppear { mirror.start() }
@@ -56,6 +68,7 @@ struct ContentView: View {
             CompanionDetailView(detail: detail, agents: mirror.agents, now: mirror.now)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
+                .onAppear { reviewCoordinator.detailDidAppear() }
         }
     }
 

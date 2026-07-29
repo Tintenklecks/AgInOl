@@ -56,3 +56,121 @@ struct AgInOl_CompanionTests {
         #expect(decoded.content == content)
     }
 }
+
+private final class MemoryAppReviewStateStore: AppReviewStateStoring {
+    var state: AppReviewPromptState?
+
+    func load() -> AppReviewPromptState? {
+        state
+    }
+
+    func save(_ state: AppReviewPromptState) {
+        self.state = state
+    }
+}
+
+@MainActor
+struct AppReviewCoordinatorTests {
+    @Test func requestsAfterTwentyDetailAppearancesAcrossRestarts() {
+        let store = MemoryAppReviewStateStore()
+        var requestCount = 0
+        let makeCoordinator = {
+            AppReviewCoordinator(
+                store: store,
+                currentVersion: { "1.0" },
+                requestReview: {
+                    requestCount += 1
+                    return true
+                }
+            )
+        }
+
+        let firstRun = makeCoordinator()
+        for _ in 0..<19 {
+            firstRun.detailDidAppear()
+        }
+        #expect(requestCount == 0)
+
+        let restarted = makeCoordinator()
+        restarted.detailDidAppear()
+        #expect(requestCount == 1)
+
+        restarted.detailDidAppear()
+        #expect(requestCount == 1)
+        #expect(store.state?.detailPresentationCount == 20)
+        #expect(store.state?.requestedVersions == ["1.0"])
+    }
+
+    @Test func newMarketingVersionRequiresTwentyNewDetailAppearances() {
+        let store = MemoryAppReviewStateStore()
+        var version = "1.0"
+        var requestCount = 0
+        let coordinator = AppReviewCoordinator(
+            store: store,
+            currentVersion: { version },
+            requestReview: {
+                requestCount += 1
+                return true
+            }
+        )
+
+        for _ in 0..<20 {
+            coordinator.detailDidAppear()
+        }
+        #expect(requestCount == 1)
+
+        version = "1.1"
+        for _ in 0..<19 {
+            coordinator.detailDidAppear()
+        }
+        #expect(requestCount == 1)
+
+        coordinator.detailDidAppear()
+        #expect(requestCount == 2)
+        #expect(store.state?.requestedVersions == ["1.0", "1.1"])
+    }
+
+    @Test func failedSystemRequestRemainsEligibleForRetry() {
+        let store = MemoryAppReviewStateStore()
+        var canRequest = false
+        var requestCount = 0
+        let coordinator = AppReviewCoordinator(
+            store: store,
+            currentVersion: { "1.0" },
+            detailPresentationThreshold: 1,
+            requestReview: {
+                requestCount += 1
+                return canRequest
+            }
+        )
+
+        coordinator.detailDidAppear()
+        #expect(requestCount == 1)
+        #expect(store.state?.requestedVersions.isEmpty == true)
+
+        canRequest = true
+        coordinator.detailDidAppear()
+        #expect(requestCount == 2)
+        #expect(store.state?.requestedVersions == ["1.0"])
+    }
+
+#if DEBUG
+    @Test func debugGestureBypassesEngagementThresholdWithoutConsumingVersion() {
+        let store = MemoryAppReviewStateStore()
+        var requestCount = 0
+        let coordinator = AppReviewCoordinator(
+            store: store,
+            currentVersion: { "1.0" },
+            requestReview: {
+                requestCount += 1
+                return true
+            }
+        )
+
+        coordinator.requestReviewForDebug()
+
+        #expect(requestCount == 1)
+        #expect(store.state == nil)
+    }
+#endif
+}
