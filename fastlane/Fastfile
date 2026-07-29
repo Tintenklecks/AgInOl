@@ -48,6 +48,23 @@ platform :ios do
     )
   end
 
+  def fastlane_content_path(directory)
+    File.expand_path(File.join(FastlaneCore::FastlaneFolder.path, directory))
+  end
+
+  def require_localized_files!(directory, extension, content_name)
+    files = Dir.glob(File.join(directory, "*", "*.#{extension}"))
+    if files.empty?
+      UI.user_error!("No #{content_name} found in #{directory}; refusing to run the upload.")
+    end
+
+    locales = files.map { |file| File.basename(File.dirname(file)) }.uniq
+    locale_directories = Dir.glob(File.join(directory, "*")).select { |path| File.directory?(path) }
+    empty_locales = locale_directories.map { |path| File.basename(path) } - locales
+    UI.message("Ignoring empty locale folders: #{empty_locales.sort.join(', ')}") unless empty_locales.empty?
+    UI.message("Found #{files.count} #{content_name} across #{locales.count} locales in #{directory}")
+  end
+
   # `deliver` only has "run" (upload) options as a Fastfile action; the
   # download_metadata/download_screenshots modes are CLI-only subcommands,
   # so we shell out to them. The API key is written to a throwaway tempfile
@@ -64,8 +81,8 @@ platform :ios do
       }.to_json)
       file.flush
 
-      metadata_path = File.join(__dir__, "metadata").shellescape
-      screenshots_path = File.join(__dir__, "screenshots").shellescape
+      metadata_path = fastlane_content_path("metadata").shellescape
+      screenshots_path = fastlane_content_path("screenshots").shellescape
       sh("DELIVER_API_KEY_PATH=#{file.path.shellescape} bundle exec fastlane deliver #{subcommand} " \
          "--metadata_path #{metadata_path} --screenshots_path #{screenshots_path} --force")
     end
@@ -94,8 +111,11 @@ platform :ios do
 
   desc "Upload all local metadata to App Store Connect"
   lane :upload_metadata do
+    metadata_path = fastlane_content_path("metadata")
+    require_localized_files!(metadata_path, "txt", "metadata files")
+
     deliver(
-      metadata_path: File.join(__dir__, "metadata"),
+      metadata_path: metadata_path,
       skip_binary_upload: true,
       skip_metadata: false,
       skip_screenshots: true,
@@ -108,8 +128,11 @@ platform :ios do
 
   desc "Upload all local screenshots to App Store Connect"
   lane :upload_screenshots do
+    screenshots_path = fastlane_content_path("screenshots")
+    require_localized_files!(screenshots_path, "png", "screenshots")
+
     deliver(
-      screenshots_path: File.join(__dir__, "screenshots"),
+      screenshots_path: screenshots_path,
       skip_binary_upload: true,
       skip_metadata: true,
       skip_screenshots: false,
