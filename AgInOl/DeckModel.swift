@@ -109,15 +109,16 @@ struct ProviderUsage: Identifiable {
     var caption: String {
         switch kind {
         case .percent(_, let window):
-            "\(window) used"
+            String(localized: "\(window) used")
         case .tokens(_, let cost, let window):
             // A zero cost means "this provider reports no spend", not
             // "you spent nothing" — don't print $0.00 as if it were a fact.
             // Keep in step with SnapshotUsage.caption.
-            cost > 0 ? String(format: "$%.2f / %@", cost, window)
-                     : "\(window) tokens"
+            cost > 0
+                ? String(localized: "$\(cost, format: .number.precision(.fractionLength(2))) / \(window)")
+                : String(localized: "\(window) tokens")
         case .unavailable(let caption):
-            caption
+            String(localized: String.LocalizationValue(caption))
         }
     }
 

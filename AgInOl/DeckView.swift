@@ -960,9 +960,9 @@ struct InfoBarView: View {
                         .font(.system(size: 14, weight: .heavy))
                         .foregroundStyle(.white.opacity(0.95))
                     HStack(spacing: 12) {
-                        CountUnit(value: model.openSessions, label: "OPEN", tint: DeckColor.cyan)
-                        CountUnit(value: model.workingCount, label: "WORK", tint: DeckColor.green)
-                        CountUnit(value: model.attentionCount, label: "NEED YOU", tint: DeckColor.amber)
+                        CountUnit(value: model.openSessions, label: String(localized: "OPEN"), tint: DeckColor.cyan)
+                        CountUnit(value: model.workingCount, label: String(localized: "WORK"), tint: DeckColor.green)
+                        CountUnit(value: model.attentionCount, label: String(localized: "NEED YOU"), tint: DeckColor.amber)
                     }
                 }
                 Spacer(minLength: 8)
@@ -1145,9 +1145,9 @@ struct SettingsCard: View {
                 Text("Key grid")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.9))
-                gridOptionRow(label: "Columns", options: AppSettings.columnOptions,
+                gridOptionRow(label: String(localized: "Columns"), options: AppSettings.columnOptions,
                               selection: $settings.gridColumns)
-                gridOptionRow(label: "Rows", options: AppSettings.rowOptions,
+                gridOptionRow(label: String(localized: "Rows"), options: AppSettings.rowOptions,
                               selection: $settings.gridRows)
                 Toggle(isOn: Binding(
                     get: { settings.showInfoBar },

@@ -143,11 +143,11 @@ private struct SummaryDetails: View {
         VStack(spacing: 12) {
             DetailCard {
                 HStack {
-                    DetailMetric(value: agents.openSessions, label: "OPEN", tint: DeckColor.cyan)
+                    DetailMetric(value: agents.openSessions, label: String(localized: "OPEN"), tint: DeckColor.cyan)
                     Spacer()
-                    DetailMetric(value: workingCount, label: "WORKING", tint: DeckColor.green)
+                    DetailMetric(value: workingCount, label: String(localized: "WORKING"), tint: DeckColor.green)
                     Spacer()
-                    DetailMetric(value: agents.attentionCount, label: "NEED YOU", tint: DeckColor.amber)
+                    DetailMetric(value: agents.attentionCount, label: String(localized: "NEED YOU"), tint: DeckColor.amber)
                 }
             }
 
@@ -225,7 +225,9 @@ private struct AgentDetails: View {
                     .foregroundStyle(.secondary)
 
                 if sessions.isEmpty {
-                    Text(agent.sessions == 0 ? "No open sessions right now." : "Session details will appear after the next Mac sync.")
+                    Text(agent.sessions == 0
+                         ? String(localized: "No open sessions right now.")
+                         : String(localized: "Session details will appear after the next Mac sync."))
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.6))
                 } else {
@@ -411,11 +413,11 @@ private struct SummaryTile: View {
 
     var body: some View {
         Tile(background: DeckColor.oliveTile) {
-            TileHeader(name: "ALL AGENTS", dot: DeckColor.amber)
+            TileHeader(name: String(localized: "ALL AGENTS"), dot: DeckColor.amber)
 
             HStack(alignment: .firstTextBaseline, spacing: 16) {
-                stat(agents.openSessions, "OPEN", DeckColor.amber)
-                stat(agents.attentionCount, "NEED YOU", DeckColor.green)
+                stat(agents.openSessions, String(localized: "OPEN"), DeckColor.amber)
+                stat(agents.attentionCount, String(localized: "NEED YOU"), DeckColor.green)
             }
 
             Text("\(agents.count) providers")
