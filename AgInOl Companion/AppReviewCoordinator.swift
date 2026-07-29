@@ -106,7 +106,7 @@ final class AppReviewCoordinator {
             return false
         }
 
-        SKStoreReviewController.requestReview(in: windowScene)
+        AppStore.requestReview(in: windowScene)
         return true
     }
 }
