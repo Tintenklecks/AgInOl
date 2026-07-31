@@ -121,14 +121,54 @@ nonisolated enum CollectorFiles {
                 options: [.regularExpression, .caseInsensitive]
             )
         }
-        clean = clean
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        clean = clean.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let transcript = embeddedTranscript(in: clean) {
+            clean = transcript
+        } else if clean.range(
+            of: #"^TRANSCRIPT\r?\n"#,
+            options: [.regularExpression, .caseInsensitive]
+        ) == nil {
+            clean = clean.replacingOccurrences(
+                of: "\\s+",
+                with: " ",
+                options: .regularExpression
+            )
+        }
         guard !clean.isEmpty else { return nil }
         guard !["new session", "untitled", "untitled session"]
             .contains(clean.lowercased()) else { return nil }
         guard let limit, clean.count > limit else { return clean }
-        return clean.prefix(limit).trimmingCharacters(in: .whitespaces) + "…"
+        return clean.prefix(limit).trimmingCharacters(in: .whitespacesAndNewlines) + "…"
+    }
+
+    /// Approval-review sessions can wrap an earlier Codex conversation in
+    /// explanatory audit text. Keep the transcript itself as the memory cue,
+    /// without treating the surrounding review request as conversation text.
+    private static func embeddedTranscript(in text: String) -> String? {
+        guard let start = text.range(of: ">>> TRANSCRIPT START",
+                                     options: .caseInsensitive) else { return nil }
+        var body = String(text[start.upperBound...])
+        if let end = body.range(of: ">>> TRANSCRIPT END", options: .caseInsensitive) {
+            body = String(body[..<end.lowerBound])
+        }
+        body = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        body = body.replacingOccurrences(
+            of: #"\s*\[\d+\]\s+user:\s*"#,
+            with: "\nUSER: ",
+            options: [.regularExpression, .caseInsensitive]
+        )
+        body = body.replacingOccurrences(
+            of: #"\s*\[\d+\]\s+assistant(?:\s+(?:analysis|commentary|final))?:\s*"#,
+            with: "\nASSISTANT: ",
+            options: [.regularExpression, .caseInsensitive]
+        )
+        body = body.replacingOccurrences(
+            of: #"\s*\[\d+\]\s+tool\s+[^:]+:\s*"#,
+            with: "\nTOOL: ",
+            options: [.regularExpression, .caseInsensitive]
+        )
+        body = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        return body.isEmpty ? nil : "TRANSCRIPT\n\(body)"
     }
 
     /// Text carried either directly or in the content arrays used by Claude,

@@ -130,7 +130,7 @@ actor ActivityHistoryStore {
                COALESCE((
                  SELECT c.content FROM activity_event_content c
                  WHERE c.event_id = e.event_id
-                 ORDER BY length(c.content) DESC, c.sequence DESC
+                 ORDER BY c.sequence DESC
                  LIMIT 1
                ), e.snippet),
                e.snippet_source, h.event_id IS NOT NULL
