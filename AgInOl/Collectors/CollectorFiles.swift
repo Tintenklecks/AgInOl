@@ -115,7 +115,7 @@ nonisolated enum CollectorFiles {
         var clean = text ?? ""
         for tag in ["system-reminder", "environment_context", "recommended_plugins"] {
             clean = clean.replacingOccurrences(
-                of: "<\(tag)(?:\\s[^>]*)?>.*?</\(tag)>",
+                of: "(?s)<\(tag)(?:\\s[^>]*)?>.*?</\(tag)>",
                 with: " ",
                 options: [.regularExpression, .caseInsensitive]
             )

@@ -16,6 +16,9 @@ nonisolated final class OpenCodeCollector: AgentCollector, @unchecked Sendable {
     private static let activeMessageWindow: TimeInterval = 10 * 60
 
     private let databasePath: String
+    private let lock = NSLock()
+    private var cachedStarts: [SessionStartCandidate] = []
+    private var startsScannedAt = Date.distantPast
 
     init() {
         let env = ProcessInfo.processInfo.environment
@@ -33,6 +36,7 @@ nonisolated final class OpenCodeCollector: AgentCollector, @unchecked Sendable {
             let sessionRows = try query(Self.sessionsSQL)
             let usageRows = try query(Self.usageSQL)
             let now = Date()
+            let startCandidates = historyStarts(now: now)
 
             let sessions = sessionRows.map { row -> SessionSnapshot in
                 let id = (row["id"] as? String) ?? ""
@@ -75,13 +79,42 @@ nonisolated final class OpenCodeCollector: AgentCollector, @unchecked Sendable {
             usage.costUSD = usageRows
                 .first { ($0["period"] as? String) == "7d" }?["cost_usd"] as? Double
 
-            return ProviderReport(installed: true, sessions: sessions, usage: usage)
+            return ProviderReport(installed: true, sessions: sessions,
+                                  startCandidates: startCandidates, usage: usage)
         } catch {
             return ProviderReport(
                 installed: true,
                 usage: UsageSnapshot(updatedAt: Date(), error: error.localizedDescription)
             )
         }
+    }
+
+    // MARK: - Activity history
+
+    private func historyStarts(now: Date) -> [SessionStartCandidate] {
+        let cached = lock.withLock { (cachedStarts, startsScannedAt) }
+        guard cached.0.isEmpty || now.timeIntervalSince(cached.1) > 30 else {
+            return cached.0
+        }
+        guard let rows = try? query(Self.historySQL) else { return cached.0 }
+        let starts = rows.compactMap { row -> SessionStartCandidate? in
+            guard let sessionID = row["id"] as? String,
+                  let created = row["time_created"] as? Double else { return nil }
+            let title = CollectorFiles.contentSnippet(row["title"] as? String)
+            let prompt = CollectorFiles.contentSnippet(row["first_prompt"] as? String)
+            guard let snippet = title ?? prompt else { return nil }
+            return SessionStartCandidate(
+                sessionID: sessionID,
+                startedAt: Date(timeIntervalSince1970: created / 1_000),
+                snippet: snippet,
+                snippetSource: title == nil ? "firstPrompt" : "title"
+            )
+        }
+        lock.withLock {
+            cachedStarts = starts
+            startsScannedAt = now
+        }
+        return starts
     }
 
     // MARK: - SQLite (read-only)
@@ -141,6 +174,25 @@ nonisolated final class OpenCodeCollector: AgentCollector, @unchecked Sendable {
     WHERE s.time_archived IS NULL
     ORDER BY s.time_updated DESC
     LIMIT 50;
+    """
+
+    private static let historySQL = """
+    SELECT
+      s.id,
+      s.title,
+      s.time_created,
+      (
+        SELECT json_extract(p.data, '$.text')
+        FROM message um
+        JOIN part p ON p.message_id = um.id
+        WHERE um.session_id = s.id
+          AND json_extract(um.data, '$.role') = 'user'
+          AND json_extract(p.data, '$.type') = 'text'
+        ORDER BY um.time_created ASC, p.time_created ASC, p.id ASC
+        LIMIT 1
+      ) AS first_prompt
+    FROM session s
+    ORDER BY s.time_created ASC;
     """
 
     private static let usageSQL = """

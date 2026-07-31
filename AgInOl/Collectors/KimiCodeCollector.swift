@@ -49,6 +49,7 @@ nonisolated final class KimiCodeCollector: AgentCollector, @unchecked Sendable {
 
             let now = Date()
             var sessions: [SessionSnapshot] = []
+            var startCandidates: [SessionStartCandidate] = []
             var totalTokens24h: Double = 0
             var totalTokens7d: Double = 0
 
@@ -81,6 +82,20 @@ nonisolated final class KimiCodeCollector: AgentCollector, @unchecked Sendable {
                     title: sessionTitle(from: state, sessionID: sessionID)
                 ))
 
+                let title = CollectorFiles.contentSnippet(state["title"] as? String)
+                let prompt = CollectorFiles.contentSnippet(state["lastPrompt"] as? String)
+                if let snippet = title ?? prompt {
+                    let createdAt = CollectorFiles.parseTimestamp(
+                        state["createdAt"], fallback: updatedAt
+                    )
+                    startCandidates.append(SessionStartCandidate(
+                        sessionID: sessionID,
+                        startedAt: createdAt,
+                        snippet: snippet,
+                        snippetSource: title == nil ? "firstPrompt" : "title"
+                    ))
+                }
+
                 let wirePath = sessionDir + "/agents/main/wire.jsonl"
                 let (t24, t7) = tokenTotals(from: wirePath, now: now)
                 totalTokens24h += t24
@@ -93,7 +108,8 @@ nonisolated final class KimiCodeCollector: AgentCollector, @unchecked Sendable {
                 UsageWindowSnapshot(label: "7d", tokens: totalTokens7d),
             ]
 
-            return ProviderReport(installed: true, sessions: sessions, usage: usage)
+            return ProviderReport(installed: true, sessions: sessions,
+                                  startCandidates: startCandidates, usage: usage)
         } catch {
             return ProviderReport(installed: true,
                                   usage: UsageSnapshot(updatedAt: Date(),

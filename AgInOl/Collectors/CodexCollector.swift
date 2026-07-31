@@ -25,6 +25,7 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
     private var usage = UsageSnapshot()
     private var liveUsage: UsageSnapshot?
     private var liveFetchedAt = Date.distantPast
+    private var startCache: [String: (size: Int, candidate: SessionStartCandidate?)] = [:]
 
     init() {
         let env = ProcessInfo.processInfo.environment
@@ -39,13 +40,15 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
         }
 
         let now = Date()
-        let recent = lock.withLock {
+        let allFiles = lock.withLock {
             if files.isEmpty || now.timeIntervalSince(scannedAt) > 30 {
                 files = CollectorFiles.listJSONL(in: sessionsDirectory)
                 scannedAt = now
             }
-            return files.sorted { $0.mtime > $1.mtime }.prefix(40)
+            return files
         }
+        let recent = allFiles.sorted { $0.mtime > $1.mtime }.prefix(40)
+        let startCandidates = historyStarts(from: allFiles)
 
         var sessions: [SessionSnapshot] = []
         var rateLimits: [String: Any]?
@@ -98,7 +101,59 @@ nonisolated final class CodexCollector: AgentCollector, @unchecked Sendable {
         // the last local Codex session and miss usage from other surfaces).
         let currentUsage = lock.withLock { liveUsage ?? usage }
 
-        return ProviderReport(installed: true, sessions: sessions, usage: currentUsage)
+        return ProviderReport(installed: true, sessions: sessions,
+                              startCandidates: startCandidates, usage: currentUsage)
+    }
+
+    // MARK: - Activity history
+
+    private func historyStarts(from files: [FileStamp]) -> [SessionStartCandidate] {
+        files.compactMap { file in
+            if let cached = lock.withLock({ startCache[file.path] }),
+               cached.candidate != nil || cached.size == file.size {
+                return cached.candidate
+            }
+            guard let sessionID = CollectorFiles.extractUUID(from: file.path) else { return nil }
+            let candidate = Self.parseStart(
+                CollectorFiles.readHead(file.path, maxBytes: 1024 * 1024),
+                sessionID: sessionID,
+                fallback: file.mtime
+            )
+            lock.withLock {
+                startCache[file.path] = (file.size, candidate)
+                if startCache.count > 4_096 { startCache.removeAll() }
+            }
+            return candidate
+        }
+    }
+
+    static func parseStart(_ text: String, sessionID: String,
+                           fallback: Date) -> SessionStartCandidate? {
+        var startedAt: Date?
+        for event in CollectorFiles.jsonLines(text) {
+            if event["type"] as? String == "session_meta",
+               let payload = event["payload"] as? [String: Any] {
+                startedAt = CollectorFiles.parseTimestamp(
+                    payload["timestamp"] ?? event["timestamp"],
+                    fallback: fallback
+                )
+            }
+            guard event["type"] as? String == "event_msg",
+                  let payload = event["payload"] as? [String: Any],
+                  payload["type"] as? String == "user_message",
+                  let snippet = CollectorFiles.contentSnippet(
+                    CollectorFiles.textContent(payload["message"])
+                  ) else { continue }
+            return SessionStartCandidate(
+                sessionID: sessionID,
+                startedAt: startedAt ?? CollectorFiles.parseTimestamp(
+                    event["timestamp"], fallback: fallback
+                ),
+                snippet: snippet,
+                snippetSource: "firstPrompt"
+            )
+        }
+        return nil
     }
 
     // MARK: - Tail parsing

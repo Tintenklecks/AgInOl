@@ -23,6 +23,7 @@ final class CollectorHub {
     private var acknowledged: [String: Date]
     private var workingSince: [String: Date] = [:]
     private var attentionKeys: [String: [String]] = [:]
+    private var observedHistoryKeys: Set<String> = []
     private var loop: Task<Void, Never>?
     /// Outbound mirror. Held behind the protocol so the iCloud KVS
     /// transport can be swapped for a faster one without touching the
@@ -86,7 +87,31 @@ final class CollectorHub {
         for collector in collectors {
             reports.append((collector, await collector.collect(context: context)))
         }
+        await recordSessionStarts(from: reports)
         apply(reports)
+    }
+
+    private func recordSessionStarts(
+        from reports: [(collector: any AgentCollector, report: ProviderReport)]
+    ) async {
+        for (collector, report) in reports where !report.startCandidates.isEmpty {
+            let fresh = report.startCandidates.filter {
+                !observedHistoryKeys.contains("\(collector.providerID):\($0.sessionID)")
+            }
+            guard !fresh.isEmpty else { continue }
+            do {
+                try await ActivityHistoryStore.shared.append(
+                    fresh,
+                    providerID: collector.providerID,
+                    providerName: collector.displayName
+                )
+                observedHistoryKeys.formUnion(
+                    fresh.map { "\(collector.providerID):\($0.sessionID)" }
+                )
+            } catch {
+                NSLog("AgInOl activity history: %@", error.localizedDescription)
+            }
+        }
     }
 
     private func apply(_ reports: [(collector: any AgentCollector, report: ProviderReport)]) {

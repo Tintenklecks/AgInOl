@@ -30,6 +30,8 @@ struct DeckView: View {
     @State private var showOnlinePrompt = false
     @State private var showAgentList = false
     @State private var sheetAgentID: String?
+    @State private var showHistory = false
+    @State private var historyModel = ActivityHistoryModel()
     @State private var showTipDialog = false
     @State private var currentTipIndex = 0
 
@@ -77,6 +79,17 @@ struct DeckView: View {
             .padding(.bottom, 8)
             .opacity(showSettings ? 0 : 1)
         }
+        .overlay(alignment: .bottomLeading) {
+            HistoryButton {
+                historyModel.refresh()
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    showHistory = true
+                }
+            }
+            .padding(.leading, 12)
+            .padding(.bottom, 8)
+            .opacity(showSettings || showHistory ? 0 : 1)
+        }
         .overlay {
             if showSettings {
                 settingsOverlay
@@ -95,6 +108,11 @@ struct DeckView: View {
         .overlay {
             if showAgentList {
                 agentListOverlay
+            }
+        }
+        .overlay {
+            if showHistory {
+                historyOverlay
             }
         }
         .overlay {
@@ -390,6 +408,7 @@ struct DeckView: View {
         "Tap an agent status key to see the open sessions behind its count.",
         "Tap ALL AGENTS for a compact overview of every provider AgInOl can see.",
         "Tap the info key or the info-bar arrows to cycle through status and usage pages.",
+        "Tap the history button in the lower-left bezel to revisit detected session starts.",
         "Online plan limits stay off until you enable them in Settings."
     ]
 
@@ -617,6 +636,146 @@ struct DeckView: View {
                     .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
             )
             .transition(.scale(scale: 0.92).combined(with: .opacity))
+        }
+    }
+
+    // MARK: - Activity history
+
+    private var historyOverlay: some View {
+        let close = {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                showHistory = false
+            }
+        }
+        return ZStack {
+            Color.black.opacity(0.45)
+                .clipShape(RoundedRectangle(cornerRadius: DeckMetrics.bezelCorner,
+                                            style: .continuous))
+                .onTapGesture(perform: close)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 8) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(DeckColor.cyan)
+                    Text("HISTORY")
+                        .font(.system(size: 10, weight: .heavy))
+                        .tracking(1.5)
+                        .foregroundStyle(.white.opacity(0.55))
+                    Spacer()
+                    CardButton(systemImage: "arrow.clockwise") {
+                        historyModel.refresh()
+                    }
+                    CardButton(systemImage: "xmark", action: close)
+                }
+                .padding(.bottom, 8)
+
+                if historyModel.isLoading && historyModel.entries.isEmpty {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(.white.opacity(0.6))
+                        .frame(maxWidth: .infinity, minHeight: 120)
+                } else if historyModel.entries.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: historyModel.includingHidden
+                              ? "eye.slash" : "clock.badge.questionmark")
+                            .font(.system(size: 22, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.25))
+                        Text(historyModel.includingHidden
+                             ? String(localized: "No history entries yet")
+                             : String(localized: "No visible history entries"))
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.45))
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 120)
+                } else {
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 0) {
+                            ForEach(Array(historyModel.entries.enumerated()), id: \.element.id) { index, entry in
+                                if index > 0 { HairlineSeparator() }
+                                historyRow(entry)
+                            }
+                        }
+                    }
+                    .frame(maxHeight: 260)
+                }
+
+                if let error = historyModel.errorMessage {
+                    Text(error)
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(DeckColor.amber)
+                        .lineLimit(2)
+                        .padding(.top, 6)
+                }
+
+                HairlineSeparator()
+                    .padding(.top, 8)
+                HStack(spacing: 7) {
+                    Image(systemName: historyModel.includingHidden ? "eye" : "eye.slash")
+                        .font(.system(size: 10, weight: .semibold))
+                    Text(historyModel.includingHidden ? "HIDE HIDDEN" : "SHOW HIDDEN")
+                        .font(.system(size: 9, weight: .bold))
+                        .tracking(0.7)
+                }
+                .foregroundStyle(.white.opacity(0.5))
+                .padding(.top, 10)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    historyModel.setIncludingHidden(!historyModel.includingHidden)
+                }
+            }
+            .padding(16)
+            .frame(width: max(240, min(gridWidth, 360)))
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(white: 0.09))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(.white.opacity(0.1), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
+            )
+            .transition(.scale(scale: 0.92).combined(with: .opacity))
+        }
+        .onExitCommand(perform: close)
+    }
+
+    private func historyRow(_ entry: ActivityHistoryEntry) -> some View {
+        HStack(alignment: .top, spacing: 9) {
+            Circle()
+                .fill(historyTint(for: entry.providerID))
+                .frame(width: 7, height: 7)
+                .padding(.top, 5)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 7) {
+                    Text(entry.providerName)
+                        .font(.system(size: 9, weight: .heavy))
+                        .foregroundStyle(historyTint(for: entry.providerID))
+                    Text(entry.occurredAt.formatted(date: .abbreviated, time: .shortened))
+                        .font(.system(size: 9, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(.white.opacity(0.38))
+                }
+                Text(entry.snippet)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.white.opacity(entry.isHidden ? 0.4 : 0.82))
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 4)
+            CardButton(systemImage: entry.isHidden ? "eye" : "eye.slash") {
+                historyModel.setHidden(!entry.isHidden, entry: entry)
+            }
+        }
+        .padding(.vertical, 9)
+        .opacity(entry.isHidden ? 0.65 : 1)
+    }
+
+    private func historyTint(for providerID: String) -> Color {
+        switch providerID {
+        case "claude": DeckColor.orange
+        case "codex": DeckColor.cyan
+        case "kimi": DeckColor.magenta
+        default: DeckColor.purple
         }
     }
 
@@ -1322,6 +1481,28 @@ struct GearButton: View {
 
     var body: some View {
         Image(systemName: "gearshape.fill")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.white.opacity(isPressed ? 0.85 : 0.28))
+            .frame(width: 30, height: 30)
+            .contentShape(Circle())
+            .scaleEffect(isPressed ? 0.88 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: isPressed)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .updating($isPressed) { _, state, _ in state = true }
+                    .onEnded { _ in action() }
+            )
+    }
+}
+
+/// Persistent bezel shortcut opening the append-only activity history.
+struct HistoryButton: View {
+    let action: () -> Void
+
+    @GestureState private var isPressed = false
+
+    var body: some View {
+        Image(systemName: "clock.arrow.circlepath")
             .font(.system(size: 13, weight: .semibold))
             .foregroundStyle(.white.opacity(isPressed ? 0.85 : 0.28))
             .frame(width: 30, height: 30)
