@@ -31,3 +31,21 @@ protocol DeckSyncSubscribing: AnyObject {
     var onChange: ((DeckSnapshot) -> Void)? { get set }
     func start()
 }
+
+/// Companion side: writes occasional user intents into a KVS mailbox and
+/// receives the Mac's correlated response on a device-specific key.
+@MainActor
+protocol CompanionRequesting: AnyObject {
+    var deviceID: String { get }
+    var onResponse: ((CompanionResponse) -> Void)? { get set }
+    func send(_ request: CompanionRequest)
+}
+
+/// Mac side: observes all Companion mailboxes and answers after applying a
+/// request against Mac-owned state.
+@MainActor
+protocol CompanionRequestServing: AnyObject {
+    var onRequest: ((CompanionRequest) -> Void)? { get set }
+    func startServingRequests()
+    func respond(_ response: CompanionResponse)
+}

@@ -107,6 +107,33 @@ struct ActivityHistoryTests {
         #expect(entries[0].snippet == fullPrompt)
     }
 
+    @Test func companionHistoryPagesUseAStableCursor() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("AgInOl-History-\(UUID().uuidString)", isDirectory: true)
+        let store = ActivityHistoryStore(
+            databaseURL: directory.appendingPathComponent("history.sqlite3")
+        )
+        let candidates = (0..<12).map { index in
+            SessionStartCandidate(
+                sessionID: "session-\(index)",
+                startedAt: Date(timeIntervalSince1970: Double(index)),
+                snippet: "Prompt \(index)",
+                snippetSource: "firstPrompt"
+            )
+        }
+        try await store.append(candidates, providerID: "codex", providerName: "CODEX")
+
+        let first = try await store.entries(limit: 10, before: nil, includingHidden: false)
+        #expect(first.map(\.sessionID) == (2..<12).reversed().map { "session-\($0)" })
+
+        let cursor = SnapshotHistoryCursor(
+            occurredAt: first.last!.occurredAt,
+            sequence: first.last!.sequence
+        )
+        let second = try await store.entries(limit: 10, before: cursor, includingHidden: false)
+        #expect(second.map(\.sessionID) == ["session-1", "session-0"])
+    }
+
     @Test func claudeStartUsesFirstUserPrompt() {
         let jsonl = """
         {"type":"system","timestamp":"2026-07-31T08:00:00Z"}

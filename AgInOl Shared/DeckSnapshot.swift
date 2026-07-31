@@ -25,6 +25,105 @@ struct DeckSnapshot: Codable, Sendable {
 struct DeckSnapshotContent: Codable, Equatable, Sendable {
     var agents: [SnapshotAgent]
     var usage: [SnapshotUsage]
+    /// Optional so Companion builds that still receive a v1 snapshot can
+    /// fall back to their legacy automatically-generated grid.
+    var layout: SnapshotDeckLayout? = nil
+}
+
+struct SnapshotDeckLayout: Codable, Equatable, Sendable {
+    let revision: Int
+    let columns: Int
+    let rows: Int
+    let assignments: [SnapshotTileAssignment]
+}
+
+/// Platform-neutral counterpart of the Mac's `KeyAssignment`. Raw values
+/// deliberately match so the Mac can validate and apply Companion commands.
+enum SnapshotTileAssignment: String, Codable, CaseIterable, Identifiable, Sendable {
+    case claudeStatus, codexStatus, opencodeStatus, kimiStatus
+    case allAgents, history
+    case claudeUsed, claudeLeft, claudeSpend
+    case claudeSessionUsed, claudeSessionLeft
+    case codexUsed, codexLeft
+    case codexSessionUsed, codexSessionLeft
+    case opencodeUsage, kimiUsage
+    case info, clock
+    case spacer
+
+    var id: String { rawValue }
+}
+
+// MARK: - Companion requests and responses
+
+/// KVS mailbox message written by a Companion. The Mac is the only process
+/// that applies mutations or reads the authoritative history database.
+struct CompanionRequest: Codable, Sendable {
+    enum Action: Codable, Sendable {
+        case setTile(slot: Int, assignment: SnapshotTileAssignment)
+        case historyPage(limit: Int, before: SnapshotHistoryCursor?, includingHidden: Bool)
+        case historyDetail(eventID: String)
+        case setHistoryHidden(eventID: String, hidden: Bool)
+    }
+
+    let id: String
+    let deviceID: String
+    let sentAt: Date
+    let action: Action
+}
+
+struct CompanionResponse: Codable, Sendable {
+    enum Payload: Codable, Sendable {
+        case acknowledged
+        case historyPage(entries: [SnapshotHistoryEntry], nextCursor: SnapshotHistoryCursor?)
+        case historyDetail(eventID: String, content: String)
+        case failed(message: String)
+    }
+
+    let requestID: String
+    let deviceID: String
+    let sentAt: Date
+    let payload: Payload
+}
+
+struct SnapshotHistoryCursor: Codable, Hashable, Sendable {
+    let occurredAt: Date
+    let sequence: Int64
+
+    private enum CodingKeys: String, CodingKey {
+        case occurredAtSeconds, sequence
+    }
+
+    init(occurredAt: Date, sequence: Int64) {
+        self.occurredAt = occurredAt
+        self.sequence = sequence
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        occurredAt = Date(timeIntervalSince1970: try container.decode(
+            Double.self,
+            forKey: .occurredAtSeconds
+        ))
+        sequence = try container.decode(Int64.self, forKey: .sequence)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(occurredAt.timeIntervalSince1970, forKey: .occurredAtSeconds)
+        try container.encode(sequence, forKey: .sequence)
+    }
+}
+
+struct SnapshotHistoryEntry: Codable, Equatable, Identifiable, Sendable {
+    let eventID: String
+    let occurredAt: Date
+    let providerID: String
+    let providerName: String
+    let preview: String
+    let hasFullContent: Bool
+    let isHidden: Bool
+
+    var id: String { eventID }
 }
 
 struct SnapshotAgent: Codable, Equatable, Sendable, Identifiable {

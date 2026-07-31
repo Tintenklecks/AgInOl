@@ -2,9 +2,8 @@
 //  ContentView.swift
 //  AgInOl Companion
 //
-//  The companion's own grid — deliberately not a pixel copy of the Mac
-//  deck. It reflows for phone and iPad instead of mimicking the fixed
-//  4×2 key layout.
+//  Full-screen Companion deck. Slot content comes from the Mac, while the
+//  grid reflows to use every point available on iPhone and iPad.
 //
 
 import SwiftUI
@@ -12,57 +11,33 @@ import SwiftUI
 struct ContentView: View {
     @State private var mirror = DeckMirror()
     @State private var detail: CompanionDetail?
+    @State private var editingSlot: Int?
+    @State private var showHistory = false
     @State private var reviewCoordinator = AppReviewCoordinator()
 
-    private let columns = [GridItem(.adaptive(minimum: 150), spacing: 12)]
-
     var body: some View {
-        ScrollView {
-            LazyVGrid(columns: columns, spacing: 12) {
-                if !mirror.agents.isEmpty {
-                    Button {
-                        detail = .summary
-                    } label: {
-                        SummaryTile(agents: mirror.agents)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Shows all agents")
-                }
-                ForEach(mirror.agents) { agent in
-                    Button {
-                        detail = .agent(agent)
-                    } label: {
-                        AgentTile(agent: agent, now: mirror.now)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Shows session details")
-                }
-                ForEach(mirror.usage) { usage in
-                    Button {
-                        detail = .usage(usage)
-                    } label: {
-                        UsageTile(usage: usage)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Shows usage details")
+        GeometryReader { proxy in
+            ZStack {
+                DeckColor.screen.ignoresSafeArea()
+                if mirror.snapshot == nil {
+                    EmptyState()
+                } else {
+                    CompanionDeckGrid(
+                        mirror: mirror,
+                        size: proxy.size,
+                        onTap: open,
+                        onLongPress: { editingSlot = $0 }
+                    )
+                    .padding(8)
                 }
             }
-            .padding(12)
         }
-        .background {
 #if DEBUG
-            DeckColor.screen
-                .ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture(count: 4) {
-                    reviewCoordinator.requestReviewForDebug()
-                }
-#else
-            DeckColor.screen.ignoresSafeArea()
-#endif
+        .onTapGesture(count: 4) {
+            reviewCoordinator.requestReviewForDebug()
         }
-        .safeAreaInset(edge: .bottom) { freshnessBar }
-        .overlay { if mirror.snapshot == nil { EmptyState() } }
+#endif
+        .overlay(alignment: .bottomTrailing) { freshnessPill.padding(12) }
         .onAppear { mirror.start() }
         .sheet(item: $detail) { detail in
             CompanionDetailView(detail: detail, agents: mirror.agents, now: mirror.now)
@@ -70,11 +45,54 @@ struct ContentView: View {
                 .presentationDragIndicator(.visible)
                 .onAppear { reviewCoordinator.detailDidAppear() }
         }
+        .sheet(isPresented: Binding(
+            get: { editingSlot != nil },
+            set: { if !$0 { editingSlot = nil } }
+        )) {
+            if let slot = editingSlot {
+                TilePickerView(
+                    slot: slot,
+                    current: mirror.tileAssignments[slot],
+                    onSelect: { assignment in
+                        mirror.assign(assignment, toSlot: slot)
+                        editingSlot = nil
+                    }
+                )
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
+        }
+        .fullScreenCover(isPresented: $showHistory) {
+            CompanionHistoryView(mirror: mirror)
+        }
     }
 
-    /// KVS latency is measured in minutes on a bad day, so the age of
-    /// the data is always on screen — a stale deck must never read as live.
-    private var freshnessBar: some View {
+    private func open(_ assignment: SnapshotTileAssignment) {
+        switch assignment {
+        case .claudeStatus, .codexStatus, .opencodeStatus, .kimiStatus:
+            if let id = assignment.providerID,
+               let agent = mirror.agents.first(where: { $0.id == id }) {
+                detail = .agent(agent)
+            }
+        case .allAgents, .info:
+            detail = .summary
+        case .history:
+            mirror.loadFirstHistoryPage()
+            showHistory = true
+        case .claudeUsed, .claudeLeft, .claudeSpend,
+             .claudeSessionUsed, .claudeSessionLeft,
+             .codexUsed, .codexLeft, .codexSessionUsed, .codexSessionLeft,
+             .opencodeUsage, .kimiUsage:
+            if let usage = mirror.usage.first(where: { $0.id == assignment.usageID }) {
+                detail = .usage(usage)
+            }
+        case .clock, .spacer:
+            break
+        }
+    }
+
+    /// Compact overlay: every safe-area point underneath remains tile space.
+    private var freshnessPill: some View {
         HStack(spacing: 6) {
             Circle()
                 .fill(mirror.isStale ? DeckColor.amber : DeckColor.green)
@@ -83,9 +101,415 @@ struct ContentView: View {
                 .font(.caption2.weight(.medium))
                 .foregroundStyle(.secondary)
         }
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity)
-        .background(.ultraThinMaterial)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 6)
+        .background(.ultraThinMaterial, in: Capsule())
+        .allowsHitTesting(false)
+    }
+}
+
+private struct CompanionDeckGrid: View {
+    let mirror: DeckMirror
+    let size: CGSize
+    let onTap: (SnapshotTileAssignment) -> Void
+    let onLongPress: (Int) -> Void
+
+    private let spacing: CGFloat = 8
+
+    var body: some View {
+        let assignments = mirror.tileAssignments
+        let columnCount = bestColumnCount(for: assignments.count, in: size)
+        let rowCount = max(Int(ceil(Double(assignments.count) / Double(columnCount))), 1)
+        let height = max(
+            44,
+            (size.height - 16 - CGFloat(rowCount - 1) * spacing) / CGFloat(rowCount)
+        )
+        let columns = Array(repeating: GridItem(.flexible(), spacing: spacing), count: columnCount)
+
+        LazyVGrid(columns: columns, spacing: spacing) {
+            ForEach(Array(assignments.enumerated()), id: \.offset) { slot, assignment in
+                Button {
+                    onTap(assignment)
+                } label: {
+                    AssignmentTile(assignment: assignment, mirror: mirror)
+                        .frame(height: height)
+                }
+                .buttonStyle(.plain)
+                .onLongPressGesture(minimumDuration: 0.55) {
+                    onLongPress(slot)
+                }
+                .accessibilityHint("Long press to change this tile")
+            }
+        }
+        .frame(maxHeight: .infinity, alignment: .center)
+    }
+
+    private func bestColumnCount(for count: Int, in size: CGSize) -> Int {
+        guard count > 1, size.height > 0 else { return 1 }
+        let targetGridAspect = Double(size.width / size.height) / 1.18
+        return (1...count)
+            .filter { count.isMultiple(of: $0) }
+            .min { lhs, rhs in
+                let lhsRows = count / lhs
+                let rhsRows = count / rhs
+                let lhsScore = abs(log((Double(lhs) / Double(lhsRows)) / targetGridAspect))
+                let rhsScore = abs(log((Double(rhs) / Double(rhsRows)) / targetGridAspect))
+                return lhsScore < rhsScore
+            } ?? min(count, 2)
+    }
+}
+
+private struct AssignmentTile: View {
+    let assignment: SnapshotTileAssignment
+    let mirror: DeckMirror
+
+    @ViewBuilder var body: some View {
+        switch assignment {
+        case .claudeStatus, .codexStatus, .opencodeStatus, .kimiStatus:
+            if let providerID = assignment.providerID,
+               let agent = mirror.agents.first(where: { $0.id == providerID }) {
+                AgentTile(agent: agent, now: mirror.now)
+            } else {
+                EmptyDataTile(title: assignment.displayName)
+            }
+        case .allAgents:
+            SummaryTile(agents: mirror.agents)
+        case .history:
+            Tile(background: DeckColor.indigoTile) {
+                TileHeader(name: String(localized: "HISTORY"), dot: DeckColor.cyan)
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(DeckColor.cyan)
+                Text("OPEN")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.white.opacity(0.55))
+            }
+        case .clock:
+            Tile(background: DeckColor.indigoTile) {
+                TileHeader(name: String(localized: "CLOCK"), dot: DeckColor.purple)
+                Text(mirror.now.formatted(date: .omitted, time: .shortened))
+                    .font(.title2.weight(.heavy).monospacedDigit())
+                    .foregroundStyle(.white.opacity(0.9))
+                Text(mirror.now.formatted(date: .abbreviated, time: .omitted))
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+        case .info:
+            Tile(background: DeckColor.indigoTile) {
+                TileHeader(name: String(localized: "INFO"), dot: DeckColor.cyan)
+                Text("\(mirror.agents.openSessions)")
+                    .font(.title.weight(.heavy).monospacedDigit())
+                    .foregroundStyle(DeckColor.cyan)
+                Text("OPEN SESSIONS")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+        case .spacer:
+            Tile(background: DeckColor.grayTile) {
+                Spacer(minLength: 0)
+                Text("LEER")
+                    .font(.caption.weight(.bold))
+                    .tracking(1.2)
+                    .foregroundStyle(.white.opacity(0.28))
+                Spacer(minLength: 0)
+            }
+        default:
+            if let usage = mirror.usage.first(where: { $0.id == assignment.usageID }) {
+                UsageAssignmentTile(usage: usage, showRemaining: assignment.showsRemaining)
+            } else {
+                EmptyDataTile(title: assignment.displayName)
+            }
+        }
+    }
+}
+
+private struct UsageAssignmentTile: View {
+    let usage: SnapshotUsage
+    let showRemaining: Bool
+
+    private var bigValue: String {
+        guard showRemaining, case .percent(let fraction, _) = usage.kind else {
+            return usage.bigValue
+        }
+        return "\(Int(((1 - fraction) * 100).rounded()))%"
+    }
+
+    var body: some View {
+        Tile(background: usage.palette.tileBackground) {
+            TileHeader(name: usage.name, dot: usage.palette.tint)
+            Text(bigValue)
+                .font(.title.weight(.heavy).monospacedDigit())
+                .foregroundStyle(usage.palette.tint)
+            if let fraction = usage.barFraction {
+                ProgressView(value: showRemaining ? 1 - fraction : fraction)
+                    .tint(usage.palette.tint)
+                    .scaleEffect(y: 0.6, anchor: .center)
+            }
+            Text(showRemaining ? String(localized: "remaining") : usage.caption)
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.5))
+                .lineLimit(1)
+        }
+    }
+}
+
+private struct EmptyDataTile: View {
+    let title: String
+
+    var body: some View {
+        Tile(background: DeckColor.grayTile) {
+            TileHeader(name: title, dot: DeckColor.gray)
+            Spacer(minLength: 0)
+            Text("—")
+                .font(.title.weight(.heavy))
+                .foregroundStyle(DeckColor.gray)
+            Text("NO DATA")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.white.opacity(0.4))
+        }
+    }
+}
+
+private extension SnapshotTileAssignment {
+    var displayName: String {
+        switch self {
+        case .claudeStatus: "Claude · Status"
+        case .codexStatus: "Codex · Status"
+        case .opencodeStatus: "OpenCode · Status"
+        case .kimiStatus: "Kimi · Status"
+        case .allAgents: String(localized: "All Agents")
+        case .history: String(localized: "Activity History")
+        case .claudeUsed: "Claude · % used"
+        case .claudeLeft: "Claude · % left"
+        case .claudeSpend: "Claude · tokens & cost"
+        case .claudeSessionUsed: "Claude · session used"
+        case .claudeSessionLeft: "Claude · session left"
+        case .codexUsed: "Codex · % used"
+        case .codexLeft: "Codex · % left"
+        case .codexSessionUsed: "Codex · session used"
+        case .codexSessionLeft: "Codex · session left"
+        case .opencodeUsage: "OpenCode · tokens"
+        case .kimiUsage: "Kimi · tokens"
+        case .info: String(localized: "Info")
+        case .clock: String(localized: "Clock")
+        case .spacer: "LEER"
+        }
+    }
+
+    var providerID: String? {
+        switch self {
+        case .claudeStatus, .claudeUsed, .claudeLeft, .claudeSpend,
+             .claudeSessionUsed, .claudeSessionLeft: "claude"
+        case .codexStatus, .codexUsed, .codexLeft,
+             .codexSessionUsed, .codexSessionLeft: "codex"
+        case .opencodeStatus, .opencodeUsage: "opencode"
+        case .kimiStatus, .kimiUsage: "kimi"
+        default: nil
+        }
+    }
+
+    var usageID: String? {
+        switch self {
+        case .claudeUsed, .claudeLeft: "claude-usage"
+        case .claudeSessionUsed, .claudeSessionLeft: "claude-session"
+        case .claudeSpend: "claude-spend"
+        case .codexUsed, .codexLeft: "codex-usage"
+        case .codexSessionUsed, .codexSessionLeft: "codex-session"
+        case .opencodeUsage: "opencode-usage"
+        case .kimiUsage: "kimi-usage"
+        default: nil
+        }
+    }
+
+    var showsRemaining: Bool {
+        switch self {
+        case .claudeLeft, .claudeSessionLeft, .codexLeft, .codexSessionLeft: true
+        default: false
+        }
+    }
+}
+
+private struct TilePickerView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let slot: Int
+    let current: SnapshotTileAssignment
+    let onSelect: (SnapshotTileAssignment) -> Void
+
+    private let sections: [(String, [SnapshotTileAssignment])] = [
+        ("General", [.allAgents, .history, .info, .clock, .spacer]),
+        ("Claude", [.claudeStatus, .claudeUsed, .claudeLeft,
+                    .claudeSessionUsed, .claudeSessionLeft, .claudeSpend]),
+        ("Codex", [.codexStatus, .codexUsed, .codexLeft,
+                   .codexSessionUsed, .codexSessionLeft]),
+        ("OpenCode", [.opencodeStatus, .opencodeUsage]),
+        ("Kimi", [.kimiStatus, .kimiUsage]),
+    ]
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(sections, id: \.0) { title, assignments in
+                    Section(title) {
+                        ForEach(assignments) { assignment in
+                            Button {
+                                onSelect(assignment)
+                            } label: {
+                                HStack {
+                                    Text(assignment.displayName)
+                                    Spacer()
+                                    if assignment == current {
+                                        Image(systemName: "checkmark")
+                                            .foregroundStyle(DeckColor.cyan)
+                                    }
+                                }
+                            }
+                            .foregroundStyle(.primary)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Tile \(slot + 1)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+}
+
+private struct CompanionHistoryView: View {
+    @Environment(\.dismiss) private var dismiss
+    let mirror: DeckMirror
+
+    @State private var expandedEventID: String?
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    if mirror.historyEntries.isEmpty && !mirror.isLoadingHistory {
+                        ContentUnavailableView(
+                            "No history entries",
+                            systemImage: "clock.badge.questionmark"
+                        )
+                        .padding(.top, 80)
+                    }
+                    ForEach(Array(mirror.historyEntries.enumerated()), id: \.element.id) { index, entry in
+                        historyRow(entry)
+                            .onAppear {
+                                if index >= mirror.historyEntries.count - 3 {
+                                    mirror.loadNextHistoryPage()
+                                }
+                            }
+                        if index < mirror.historyEntries.count - 1 {
+                            Divider().overlay(.white.opacity(0.08))
+                        }
+                    }
+                    if mirror.isLoadingHistory {
+                        ProgressView()
+                            .tint(DeckColor.cyan)
+                            .frame(maxWidth: .infinity)
+                            .padding(22)
+                    }
+                    if let error = mirror.historyError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(DeckColor.amber)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                    }
+                }
+                .padding(.horizontal, 14)
+            }
+            .background(DeckColor.screen.ignoresSafeArea())
+            .navigationTitle("History")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        mirror.loadFirstHistoryPage(
+                            includingHidden: !mirror.includingHiddenHistory
+                        )
+                    } label: {
+                        Image(systemName: mirror.includingHiddenHistory ? "eye" : "eye.slash")
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private func historyRow(_ entry: SnapshotHistoryEntry) -> some View {
+        let expanded = expandedEventID == entry.eventID
+        let content = expanded
+            ? mirror.historyContents[entry.eventID] ?? entry.preview
+            : entry.preview
+        return HStack(alignment: .top, spacing: 10) {
+            Circle()
+                .fill(historyTint(entry.providerID))
+                .frame(width: 8, height: 8)
+                .padding(.top, 6)
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 7) {
+                    Text(entry.providerName)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(historyTint(entry.providerID))
+                    Text(entry.occurredAt.formatted(date: .abbreviated, time: .omitted))
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    Text(entry.occurredAt.formatted(date: .omitted, time: .shortened))
+                        .font(.caption2.bold().monospacedDigit())
+                        .foregroundStyle(historyTint(entry.providerID))
+                    Spacer()
+                    if expanded && entry.hasFullContent && mirror.historyContents[entry.eventID] == nil {
+                        ProgressView().controlSize(.mini)
+                    }
+                    Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.secondary)
+                }
+                Text(content)
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(entry.isHidden ? 0.45 : 0.84))
+                    .lineLimit(expanded ? nil : 3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    expandedEventID = expanded ? nil : entry.eventID
+                }
+                if !expanded && entry.hasFullContent {
+                    mirror.loadHistoryDetail(eventID: entry.eventID)
+                }
+            }
+            Button {
+                mirror.setHistoryHidden(!entry.isHidden, eventID: entry.eventID)
+            } label: {
+                Image(systemName: entry.isHidden ? "eye" : "eye.slash")
+                    .font(.caption.bold())
+                    .foregroundStyle(.secondary)
+                    .padding(7)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 12)
+        .opacity(entry.isHidden ? 0.65 : 1)
+    }
+
+    private func historyTint(_ providerID: String) -> Color {
+        switch providerID {
+        case "claude": DeckColor.orange
+        case "codex": DeckColor.cyan
+        case "kimi": DeckColor.magenta
+        default: DeckColor.purple
+        }
     }
 }
 
@@ -511,7 +935,7 @@ private struct Tile<Content: View>: View {
         VStack(alignment: .leading, spacing: 4) {
             content
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(12)
         .background(background, in: .rect(cornerRadius: 14))
     }

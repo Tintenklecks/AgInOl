@@ -163,6 +163,78 @@ actor ActivityHistoryStore {
         return result
     }
 
+    /// Cursor-based page used by Companion devices. A timestamp/sequence
+    /// cursor remains stable when newer events are appended while scrolling.
+    func entries(limit requestedLimit: Int,
+                 before cursor: SnapshotHistoryCursor?,
+                 includingHidden: Bool) throws -> [ActivityHistoryEntry] {
+        let db = try openDatabase()
+        let limit = min(max(requestedLimit, 1), 50)
+        var predicates: [String] = []
+        if !includingHidden { predicates.append("h.event_id IS NULL") }
+        if cursor != nil {
+            predicates.append("(e.occurred_at < ? OR (e.occurred_at = ? AND e.sequence < ?))")
+        }
+        let whereClause = predicates.isEmpty ? "" : "WHERE " + predicates.joined(separator: " AND ")
+        let sql = """
+        SELECT e.sequence, e.event_id, e.occurred_at, e.observed_at,
+               e.provider_id, e.provider_name, e.session_id,
+               COALESCE((
+                 SELECT c.content FROM activity_event_content c
+                 WHERE c.event_id = e.event_id
+                 ORDER BY c.sequence DESC
+                 LIMIT 1
+               ), e.snippet),
+               e.snippet_source, h.event_id IS NOT NULL
+        FROM activity_event e
+        LEFT JOIN hidden_activity_event h ON h.event_id = e.event_id
+        \(whereClause)
+        ORDER BY e.occurred_at DESC, e.sequence DESC
+        LIMIT ?;
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            throw error(for: db, fallback: "History page query could not be prepared")
+        }
+        defer { sqlite3_finalize(statement) }
+
+        var binding: Int32 = 1
+        if let cursor {
+            sqlite3_bind_double(statement, binding, cursor.occurredAt.timeIntervalSince1970)
+            sqlite3_bind_double(statement, binding + 1, cursor.occurredAt.timeIntervalSince1970)
+            sqlite3_bind_int64(statement, binding + 2, cursor.sequence)
+            binding += 3
+        }
+        sqlite3_bind_int(statement, binding, Int32(limit))
+        return readEntries(from: statement)
+    }
+
+    func entry(eventID: String) throws -> ActivityHistoryEntry? {
+        let db = try openDatabase()
+        let sql = """
+        SELECT e.sequence, e.event_id, e.occurred_at, e.observed_at,
+               e.provider_id, e.provider_name, e.session_id,
+               COALESCE((
+                 SELECT c.content FROM activity_event_content c
+                 WHERE c.event_id = e.event_id
+                 ORDER BY c.sequence DESC
+                 LIMIT 1
+               ), e.snippet),
+               e.snippet_source, h.event_id IS NOT NULL
+        FROM activity_event e
+        LEFT JOIN hidden_activity_event h ON h.event_id = e.event_id
+        WHERE e.event_id = ?
+        LIMIT 1;
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            throw error(for: db, fallback: "History detail query could not be prepared")
+        }
+        defer { sqlite3_finalize(statement) }
+        bind(eventID, at: 1, to: statement)
+        return readEntries(from: statement).first
+    }
+
     func setHidden(_ hidden: Bool, eventID: String) throws {
         let db = try openDatabase()
         let sql = hidden
@@ -213,6 +285,25 @@ actor ActivityHistoryStore {
     private func text(at index: Int32, from statement: OpaquePointer?) -> String {
         guard let value = sqlite3_column_text(statement, index) else { return "" }
         return String(cString: value)
+    }
+
+    private func readEntries(from statement: OpaquePointer?) -> [ActivityHistoryEntry] {
+        var result: [ActivityHistoryEntry] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            result.append(ActivityHistoryEntry(
+                sequence: sqlite3_column_int64(statement, 0),
+                eventID: text(at: 1, from: statement),
+                occurredAt: Date(timeIntervalSince1970: sqlite3_column_double(statement, 2)),
+                observedAt: Date(timeIntervalSince1970: sqlite3_column_double(statement, 3)),
+                providerID: text(at: 4, from: statement),
+                providerName: text(at: 5, from: statement),
+                sessionID: text(at: 6, from: statement),
+                snippet: text(at: 7, from: statement),
+                snippetSource: text(at: 8, from: statement),
+                isHidden: sqlite3_column_int(statement, 9) != 0
+            ))
+        }
+        return result
     }
 
     private func error(for database: OpaquePointer, fallback: String) -> ActivityHistoryError {

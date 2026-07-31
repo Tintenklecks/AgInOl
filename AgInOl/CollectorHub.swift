@@ -42,6 +42,12 @@ final class CollectorHub {
         model.onAcknowledge = { [weak self] providerID in
             self?.acknowledge(providerID: providerID)
         }
+        if let requestServer = self.sync as? any CompanionRequestServing {
+            requestServer.onRequest = { [weak self] request in
+                self?.handleCompanionRequest(request)
+            }
+            requestServer.startServingRequests()
+        }
     }
 
     func start() {
@@ -178,7 +184,102 @@ final class CollectorHub {
 
         // Mirror outward on every cycle; the transport decides what is
         // actually worth sending.
-        sync.publish(DeckSnapshot.make(agents: agents, usage: usage))
+        publishDeck()
+    }
+
+    private func publishDeck() {
+        let settings = AppSettings.shared
+        sync.publish(DeckSnapshot.make(
+            agents: model.agents,
+            usage: model.usage,
+            assignments: model.keyAssignments,
+            columns: settings.gridColumns,
+            rows: settings.gridRows,
+            layoutRevision: model.layoutRevision
+        ))
+    }
+
+    // MARK: - Companion requests
+
+    private func handleCompanionRequest(_ request: CompanionRequest) {
+        switch request.action {
+        case .setTile(let slot, let assignment):
+            guard slot >= 0, slot < AppSettings.shared.keyCount,
+                  let macAssignment = KeyAssignment(rawValue: assignment.rawValue) else {
+                respond(.failed(message: "Invalid tile assignment"), to: request)
+                return
+            }
+            model.assign(macAssignment, toSlot: slot)
+            publishDeck()
+            respond(.acknowledged, to: request)
+
+        case .historyPage(let requestedLimit, let cursor, let includingHidden):
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    let limit = min(max(requestedLimit, 1), 20)
+                    let page = try await ActivityHistoryStore.shared.entries(
+                        limit: limit + 1,
+                        before: cursor,
+                        includingHidden: includingHidden
+                    )
+                    let entries = Array(page.prefix(limit))
+                    let snapshots = entries.map { entry in
+                        let preview = CollectorFiles.contentSnippet(entry.snippet, limit: 240) ?? entry.snippet
+                        return SnapshotHistoryEntry(
+                            eventID: entry.eventID,
+                            occurredAt: entry.occurredAt,
+                            providerID: entry.providerID,
+                            providerName: entry.providerName,
+                            preview: preview,
+                            hasFullContent: preview != entry.snippet,
+                            isHidden: entry.isHidden
+                        )
+                    }
+                    let nextCursor = page.count > limit ? entries.last.map {
+                        SnapshotHistoryCursor(occurredAt: $0.occurredAt, sequence: $0.sequence)
+                    } : nil
+                    respond(.historyPage(entries: snapshots, nextCursor: nextCursor), to: request)
+                } catch {
+                    respond(.failed(message: error.localizedDescription), to: request)
+                }
+            }
+
+        case .historyDetail(let eventID):
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    guard let entry = try await ActivityHistoryStore.shared.entry(eventID: eventID) else {
+                        respond(.failed(message: "History entry not found"), to: request)
+                        return
+                    }
+                    respond(.historyDetail(eventID: eventID, content: entry.snippet), to: request)
+                } catch {
+                    respond(.failed(message: error.localizedDescription), to: request)
+                }
+            }
+
+        case .setHistoryHidden(let eventID, let hidden):
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    try await ActivityHistoryStore.shared.setHidden(hidden, eventID: eventID)
+                    respond(.acknowledged, to: request)
+                } catch {
+                    respond(.failed(message: error.localizedDescription), to: request)
+                }
+            }
+        }
+    }
+
+    private func respond(_ payload: CompanionResponse.Payload, to request: CompanionRequest) {
+        guard let requestServer = sync as? any CompanionRequestServing else { return }
+        requestServer.respond(CompanionResponse(
+            requestID: request.id,
+            deviceID: request.deviceID,
+            sentAt: Date(),
+            payload: payload
+        ))
     }
 
     // MARK: - Session mapping

@@ -16,12 +16,24 @@ extension DeckSnapshot {
     @MainActor
     static func make(agents: [Agent],
                      usage: [ProviderUsage],
+                     assignments: [KeyAssignment],
+                     columns: Int,
+                     rows: Int,
+                     layoutRevision: Int,
                      at date: Date = Date()) -> DeckSnapshot {
         DeckSnapshot(
             capturedAt: date,
             content: DeckSnapshotContent(
                 agents: agents.map(SnapshotAgent.init),
-                usage: usage.map(SnapshotUsage.init)
+                usage: usage.map(SnapshotUsage.init),
+                layout: SnapshotDeckLayout(
+                    revision: layoutRevision,
+                    columns: columns,
+                    rows: rows,
+                    assignments: assignments.map {
+                        SnapshotTileAssignment(rawValue: $0.rawValue) ?? .spacer
+                    }
+                )
             )
         )
     }

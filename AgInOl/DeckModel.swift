@@ -285,15 +285,18 @@ final class DeckModel {
     var now = Date()
     var infoPageIndex = 0
     var keyAssignments: [KeyAssignment]
+    private(set) var layoutRevision: Int
 
     private var tickTimer: Timer?
     private var pageTimer: Timer?
 
     private static let assignmentsKey = "KeyAssignments"
+    private static let layoutRevisionKey = "KeyLayoutRevision"
 
     init(agents: [Agent], usage: [ProviderUsage]) {
         self.agents = agents
         self.usage = usage
+        layoutRevision = UserDefaults.standard.integer(forKey: Self.layoutRevisionKey)
         if let stored = UserDefaults.standard.stringArray(forKey: Self.assignmentsKey),
            !stored.isEmpty {
             keyAssignments = stored.enumerated().map { slot, raw in
@@ -316,8 +319,11 @@ final class DeckModel {
         while keyAssignments.count <= slot {
             keyAssignments.append(KeyAssignment.defaultAssignment(forSlot: keyAssignments.count))
         }
+        guard keyAssignments[slot] != assignment else { return }
         keyAssignments[slot] = assignment
         UserDefaults.standard.set(keyAssignments.map(\.rawValue), forKey: Self.assignmentsKey)
+        layoutRevision += 1
+        UserDefaults.standard.set(layoutRevision, forKey: Self.layoutRevisionKey)
     }
 
     // MARK: Lookups for key rendering

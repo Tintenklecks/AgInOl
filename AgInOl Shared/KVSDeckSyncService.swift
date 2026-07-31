@@ -14,11 +14,15 @@
 import Foundation
 
 @MainActor
-final class KVSDeckSyncService: DeckSyncPublishing, DeckSyncSubscribing {
+final class KVSDeckSyncService: DeckSyncPublishing, DeckSyncSubscribing,
+                                CompanionRequesting, CompanionRequestServing {
     /// Single key holding the whole snapshot. KVS allows 1 MB per key
     /// and 1 MB total, which a deck of tiles is nowhere near.
     private nonisolated static let snapshotKey = "deck.snapshot.v1"
+    private nonisolated static let requestPrefix = "companion.request.v1."
+    private nonisolated static let responsePrefix = "companion.response.v1."
     private static let maxPayloadBytes = 900_000
+    private static let deviceIDDefaultsKey = "CompanionDeviceID"
 
     private let store: NSUbiquitousKeyValueStore
     private let minimumWriteInterval: TimeInterval
@@ -30,6 +34,10 @@ final class KVSDeckSyncService: DeckSyncPublishing, DeckSyncSubscribing {
 
     private var lastReceivedAt: Date?
     var onChange: ((DeckSnapshot) -> Void)?
+    var onResponse: ((CompanionResponse) -> Void)?
+    var onRequest: ((CompanionRequest) -> Void)?
+    let deviceID: String
+    private var isObserving = false
 
     private lazy var encoder: JSONEncoder = {
         let encoder = JSONEncoder()
@@ -44,9 +52,19 @@ final class KVSDeckSyncService: DeckSyncPublishing, DeckSyncSubscribing {
     }()
 
     init(store: NSUbiquitousKeyValueStore = .default,
-         minimumWriteInterval: TimeInterval = 30) {
+         minimumWriteInterval: TimeInterval = 30,
+         deviceID: String? = nil) {
         self.store = store
         self.minimumWriteInterval = minimumWriteInterval
+        if let deviceID {
+            self.deviceID = deviceID
+        } else if let stored = UserDefaults.standard.string(forKey: Self.deviceIDDefaultsKey) {
+            self.deviceID = stored
+        } else {
+            let generated = UUID().uuidString.lowercased()
+            UserDefaults.standard.set(generated, forKey: Self.deviceIDDefaultsKey)
+            self.deviceID = generated
+        }
     }
 
     deinit {
@@ -119,15 +137,54 @@ final class KVSDeckSyncService: DeckSyncPublishing, DeckSyncSubscribing {
     }
 
     func start() {
+        beginObserving()
+        warnIfUnavailable()
+        store.synchronize()
+        if let snapshot = latest { deliver(snapshot) }
+    }
+
+    // MARK: - Companion request/response mailbox
+
+    func send(_ request: CompanionRequest) {
+        write(request, key: Self.requestPrefix + request.deviceID)
+    }
+
+    func respond(_ response: CompanionResponse) {
+        write(response, key: Self.responsePrefix + response.deviceID)
+    }
+
+    func startServingRequests() {
+        beginObserving()
+        warnIfUnavailable()
+        store.synchronize()
+        deliverRequests(for: store.dictionaryRepresentation.keys.filter {
+            $0.hasPrefix(Self.requestPrefix)
+        })
+    }
+
+    private func beginObserving() {
+        guard !isObserving else { return }
+        isObserving = true
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(storeChangedExternally(_:)),
             name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
             object: store
         )
-        warnIfUnavailable()
-        store.synchronize()
-        if let snapshot = latest { deliver(snapshot) }
+    }
+
+    private func write<T: Encodable>(_ value: T, key: String) {
+        do {
+            let data = try encoder.encode(value)
+            guard data.count <= Self.maxPayloadBytes else {
+                assertionFailure("KVS payload of \(data.count) B exceeds the budget")
+                return
+            }
+            store.set(data, forKey: key)
+            store.synchronize()
+        } catch {
+            print("[DeckSync] mailbox encode failed: \(error)")
+        }
     }
 
     /// KVS posts this on its own serial queue (`com.apple.kvs.client.callback`),
@@ -135,13 +192,36 @@ final class KVSDeckSyncService: DeckSyncPublishing, DeckSyncSubscribing {
     @objc private nonisolated func storeChangedExternally(_ note: Notification) {
         // Read what we need here: `Notification` can't cross into the Task.
         let changedKeys = note.userInfo?[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
-        // A nil key list means "everything may have changed" (initial
-        // sync, quota); only bail when we're told our key was untouched.
-        if let changedKeys, !changedKeys.contains(Self.snapshotKey) { return }
-
         Task { @MainActor [weak self] in
-            guard let self, let snapshot = latest else { return }
-            deliver(snapshot)
+            guard let self else { return }
+            let keys = changedKeys ?? Array(store.dictionaryRepresentation.keys)
+            if keys.contains(Self.snapshotKey), let snapshot = latest {
+                deliver(snapshot)
+            }
+            let responseKey = Self.responsePrefix + deviceID
+            if keys.contains(responseKey),
+               let response: CompanionResponse = decodedValue(forKey: responseKey),
+               response.deviceID == deviceID {
+                onResponse?(response)
+            }
+            deliverRequests(for: keys.filter { $0.hasPrefix(Self.requestPrefix) })
+        }
+    }
+
+    private func deliverRequests<S: Sequence>(for keys: S) where S.Element == String {
+        for key in keys {
+            guard let request: CompanionRequest = decodedValue(forKey: key) else { continue }
+            onRequest?(request)
+        }
+    }
+
+    private func decodedValue<T: Decodable>(forKey key: String) -> T? {
+        guard let data = store.data(forKey: key) else { return nil }
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            print("[DeckSync] mailbox decode failed: \(error)")
+            return nil
         }
     }
 

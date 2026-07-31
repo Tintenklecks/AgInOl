@@ -44,7 +44,14 @@ struct AgInOl_CompanionTests {
                 kind: .percent(fraction: 0.42, window: "7d"),
                 secondaryText: "5h 10% used",
                 resetsAt: timestamp
-            )]
+            )],
+            layout: SnapshotDeckLayout(
+                revision: 4,
+                columns: 4,
+                rows: 2,
+                assignments: [.codexStatus, .codexUsed, .history, .spacer,
+                              .allAgents, .clock, .info, .spacer]
+            )
         )
         let snapshot = DeckSnapshot(capturedAt: timestamp, content: content)
 
@@ -54,6 +61,21 @@ struct AgInOl_CompanionTests {
         )
 
         #expect(decoded.content == content)
+        #expect(decoded.content.layout?.assignments.last == .spacer)
+    }
+
+    @Test func historyCursorPreservesFractionalTimestamp() throws {
+        let cursor = SnapshotHistoryCursor(
+            occurredAt: Date(timeIntervalSince1970: 1_785_484_800.123456),
+            sequence: 42
+        )
+
+        let decoded = try JSONDecoder().decode(
+            SnapshotHistoryCursor.self,
+            from: JSONEncoder().encode(cursor)
+        )
+
+        #expect(decoded == cursor)
     }
 }
 
