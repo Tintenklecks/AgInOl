@@ -29,8 +29,8 @@ final class AppSettings {
         didSet { UserDefaults.standard.set(gridRows, forKey: Self.gridRowsKey) }
     }
 
-    static let columnOptions = Array(2...6)
-    static let rowOptions = Array(1...4)
+    static let columnOptions = Array(1...6)
+    static let rowOptions = Array(1...6)
     var keyCount: Int { gridColumns * gridRows }
 
     /// Show the info-bar carousel and its arrow touch points below the

@@ -41,8 +41,8 @@ protocol CompanionRequesting: AnyObject {
     func send(_ request: CompanionRequest)
 }
 
-/// Mac side: observes all Companion mailboxes and answers after applying a
-/// request against Mac-owned state.
+/// Mac side: observes all Companion mailboxes and answers requests against
+/// Mac-owned data such as the activity history.
 @MainActor
 protocol CompanionRequestServing: AnyObject {
     var onRequest: ((CompanionRequest) -> Void)? { get set }

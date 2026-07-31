@@ -2,8 +2,8 @@
 //  ContentView.swift
 //  AgInOl Companion
 //
-//  Full-screen Companion deck. Slot content comes from the Mac, while the
-//  grid reflows to use every point available on iPhone and iPad.
+//  Full-screen Companion deck. Agent data comes from the Mac; the tile
+//  layout is configured and persisted independently on each iOS device.
 //
 
 import SwiftUI
@@ -22,13 +22,19 @@ struct ContentView: View {
                 if mirror.snapshot == nil {
                     EmptyState()
                 } else {
+                    let grid = CompanionGridMetrics(size: proxy.size)
                     CompanionDeckGrid(
                         mirror: mirror,
                         size: proxy.size,
+                        grid: grid,
                         onTap: open,
                         onLongPress: { editingSlot = $0 }
                     )
                     .padding(8)
+                    .onAppear { mirror.configureSlotCount(grid.slotCount) }
+                    .onChange(of: grid.slotCount) { _, count in
+                        mirror.configureSlotCount(count)
+                    }
                 }
             }
         }
@@ -111,20 +117,19 @@ struct ContentView: View {
 private struct CompanionDeckGrid: View {
     let mirror: DeckMirror
     let size: CGSize
+    let grid: CompanionGridMetrics
     let onTap: (SnapshotTileAssignment) -> Void
     let onLongPress: (Int) -> Void
 
     private let spacing: CGFloat = 8
 
     var body: some View {
-        let assignments = mirror.tileAssignments
-        let columnCount = bestColumnCount(for: assignments.count, in: size)
-        let rowCount = max(Int(ceil(Double(assignments.count) / Double(columnCount))), 1)
+        let assignments = Array(mirror.tileAssignments.prefix(grid.slotCount))
         let height = max(
             44,
-            (size.height - 16 - CGFloat(rowCount - 1) * spacing) / CGFloat(rowCount)
+            (size.height - 16 - CGFloat(grid.rows - 1) * spacing) / CGFloat(grid.rows)
         )
-        let columns = Array(repeating: GridItem(.flexible(), spacing: spacing), count: columnCount)
+        let columns = Array(repeating: GridItem(.flexible(), spacing: spacing), count: grid.columns)
 
         LazyVGrid(columns: columns, spacing: spacing) {
             ForEach(Array(assignments.enumerated()), id: \.offset) { slot, assignment in
@@ -143,19 +148,31 @@ private struct CompanionDeckGrid: View {
         }
         .frame(maxHeight: .infinity, alignment: .center)
     }
+}
 
-    private func bestColumnCount(for count: Int, in size: CGSize) -> Int {
-        guard count > 1, size.height > 0 else { return 1 }
-        let targetGridAspect = Double(size.width / size.height) / 1.18
-        return (1...count)
-            .filter { count.isMultiple(of: $0) }
-            .min { lhs, rhs in
-                let lhsRows = count / lhs
-                let rhsRows = count / rhs
-                let lhsScore = abs(log((Double(lhs) / Double(lhsRows)) / targetGridAspect))
-                let rhsScore = abs(log((Double(rhs) / Double(rhsRows)) / targetGridAspect))
-                return lhsScore < rhsScore
-            } ?? min(count, 2)
+struct CompanionGridMetrics: Equatable {
+    let columns: Int
+    let rows: Int
+
+    var slotCount: Int { columns * rows }
+
+    init(size: CGSize) {
+        let spacing: CGFloat = 8
+        let inset: CGFloat = 16
+        // Large, nearly square Stream-Deck-style keys. Bigger displays gain
+        // rows and columns instead of stretching the same eight assignments.
+        let preferredEdge: CGFloat = 148
+        let width = max(size.width - inset, preferredEdge)
+        let height = max(size.height - inset, preferredEdge)
+        if width <= height {
+            let fittedRows = Int((height + spacing) / (preferredEdge + spacing))
+            rows = min(6, max(1, fittedRows))
+            columns = min(6, max(1, Int((CGFloat(rows) * width / height).rounded())))
+        } else {
+            let fittedColumns = Int((width + spacing) / (preferredEdge + spacing))
+            columns = min(6, max(1, fittedColumns))
+            rows = min(6, max(1, Int((CGFloat(columns) * height / width).rounded())))
+        }
     }
 }
 

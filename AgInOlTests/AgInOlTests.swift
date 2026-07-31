@@ -9,11 +9,8 @@ import Testing
 @testable import AgInOl
 
 struct AgInOlTests {
-
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-        // Swift Testing Documentation
-        // https://developer.apple.com/documentation/testing
+    @Test func deckGridOffersOneThroughSixRowsAndColumns() {
+        #expect(AppSettings.columnOptions == Array(1...6))
+        #expect(AppSettings.rowOptions == Array(1...6))
     }
-
 }

@@ -38,7 +38,7 @@ struct SnapshotDeckLayout: Codable, Equatable, Sendable {
 }
 
 /// Platform-neutral counterpart of the Mac's `KeyAssignment`. Raw values
-/// deliberately match so the Mac can validate and apply Companion commands.
+/// deliberately match so every Companion offers the same content choices.
 enum SnapshotTileAssignment: String, Codable, CaseIterable, Identifiable, Sendable {
     case claudeStatus, codexStatus, opencodeStatus, kimiStatus
     case allAgents, history
@@ -55,10 +55,12 @@ enum SnapshotTileAssignment: String, Codable, CaseIterable, Identifiable, Sendab
 
 // MARK: - Companion requests and responses
 
-/// KVS mailbox message written by a Companion. The Mac is the only process
-/// that applies mutations or reads the authoritative history database.
+/// KVS mailbox message written by a Companion. History mutations and reads
+/// are processed by the Mac; tile assignments are now local to each device.
 struct CompanionRequest: Codable, Sendable {
     enum Action: Codable, Sendable {
+        /// Kept so queued requests from the first Companion build still decode.
+        /// Current clients persist tile choices locally and never send this.
         case setTile(slot: Int, assignment: SnapshotTileAssignment)
         case historyPage(limit: Int, before: SnapshotHistoryCursor?, includingHidden: Bool)
         case historyDetail(eventID: String)

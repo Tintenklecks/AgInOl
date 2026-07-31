@@ -203,15 +203,12 @@ final class CollectorHub {
 
     private func handleCompanionRequest(_ request: CompanionRequest) {
         switch request.action {
-        case .setTile(let slot, let assignment):
-            guard slot >= 0, slot < AppSettings.shared.keyCount,
-                  let macAssignment = KeyAssignment(rawValue: assignment.rawValue) else {
-                respond(.failed(message: "Invalid tile assignment"), to: request)
-                return
-            }
-            model.assign(macAssignment, toSlot: slot)
-            publishDeck()
-            respond(.acknowledged, to: request)
+        case .setTile:
+            // Compatibility with the first Companion wire format. Layouts
+            // are device-local now, so even an older client must not mutate
+            // the Mac deck.
+            respond(.failed(message: "Tile layouts are configured on each Companion device"),
+                    to: request)
 
         case .historyPage(let requestedLimit, let cursor, let includingHidden):
             Task { [weak self] in

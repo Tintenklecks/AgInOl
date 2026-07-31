@@ -177,7 +177,7 @@ struct ProviderUsage: Identifiable {
 
 // MARK: - Key assignments
 
-/// What one of the 8 physical keys displays. Chosen per key via long-press.
+/// What one configurable deck key displays. Chosen per key via long-press.
 enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
     case claudeStatus, codexStatus, opencodeStatus, kimiStatus
     case allAgents, history
@@ -247,8 +247,8 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
     }
 
     /// Row-major fresh-install defaults; the first 8 are the original 4×2
-    /// layout, the rest fill in when the grid grows in settings (up to
-    /// the 6×4 maximum).
+    /// layout. Larger grids continue with these defaults and then use info
+    /// tiles up to the configurable 6×6 maximum.
     static let defaultLayout: [KeyAssignment] = [
         .claudeStatus, .codexStatus, .opencodeStatus, .kimiStatus,
         .claudeUsed, .codexUsed, .opencodeUsage, .kimiUsage,

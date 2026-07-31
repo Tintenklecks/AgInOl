@@ -77,6 +77,112 @@ struct AgInOl_CompanionTests {
 
         #expect(decoded == cursor)
     }
+
+    @MainActor
+    @Test func companionImportsMacLayoutOnceThenKeepsDeviceChoices() {
+        let initial = companionSnapshot(assignments: [
+            .claudeStatus, .codexStatus, .opencodeStatus, .kimiStatus,
+            .claudeUsed, .codexUsed, .opencodeUsage, .kimiUsage,
+        ])
+        let sync = MemoryDeckSync(latest: initial)
+        let store = MemoryCompanionDeckLayoutStore()
+        let mirror = DeckMirror(sync: sync, layoutStore: store)
+
+        mirror.start()
+        mirror.configureSlotCount(10)
+
+        #expect(mirror.tileAssignments.count == 10)
+        #expect(mirror.tileAssignments[0] == .claudeStatus)
+        #expect(mirror.tileAssignments[8] == .spacer)
+
+        mirror.assign(.history, toSlot: 0)
+        sync.deliver(companionSnapshot(assignments: [
+            .clock, .clock, .clock, .clock, .clock, .clock, .clock, .clock,
+        ]))
+
+        #expect(mirror.tileAssignments[0] == .history)
+        #expect(store.layout?.assignments[0] == .history)
+
+        let restarted = DeckMirror(
+            sync: MemoryDeckSync(latest: companionSnapshot(assignments: [.clock])),
+            layoutStore: store
+        )
+        restarted.start()
+        restarted.configureSlotCount(10)
+        #expect(restarted.tileAssignments[0] == .history)
+    }
+
+    @MainActor
+    @Test func companionLayoutGrowsWithoutLosingHiddenSlots() {
+        let sync = MemoryDeckSync(latest: companionSnapshot(assignments: [
+            .claudeStatus, .codexStatus, .history, .clock,
+        ]))
+        let store = MemoryCompanionDeckLayoutStore()
+        let mirror = DeckMirror(sync: sync, layoutStore: store)
+
+        mirror.start()
+        mirror.configureSlotCount(6)
+        mirror.assign(.allAgents, toSlot: 5)
+        mirror.configureSlotCount(4)
+        #expect(mirror.tileAssignments.count == 4)
+
+        mirror.configureSlotCount(6)
+        #expect(mirror.tileAssignments[5] == .allAgents)
+    }
+
+    @Test func companionGridUsesDisplaySizeAndKeepsMacLikeKeyProportions() {
+        let phonePortrait = CompanionGridMetrics(size: CGSize(width: 393, height: 852))
+        let padPortrait = CompanionGridMetrics(size: CGSize(width: 1_024, height: 1_366))
+        let padLandscape = CompanionGridMetrics(size: CGSize(width: 1_366, height: 1_024))
+
+        #expect(phonePortrait.columns == 2)
+        #expect(phonePortrait.rows == 5)
+        #expect(padPortrait.columns == 4)
+        #expect(padPortrait.rows == 6)
+        #expect(padLandscape.columns == 6)
+        #expect(padLandscape.rows == 4)
+    }
+}
+
+@MainActor
+private final class MemoryCompanionDeckLayoutStore: CompanionDeckLayoutStoring {
+    var layout: CompanionDeckLayout?
+
+    func load() -> CompanionDeckLayout? { layout }
+    func save(_ layout: CompanionDeckLayout) { self.layout = layout }
+}
+
+@MainActor
+private final class MemoryDeckSync: DeckSyncSubscribing {
+    var latest: DeckSnapshot?
+    var onChange: ((DeckSnapshot) -> Void)?
+
+    init(latest: DeckSnapshot?) {
+        self.latest = latest
+    }
+
+    func start() {}
+
+    func deliver(_ snapshot: DeckSnapshot) {
+        latest = snapshot
+        onChange?(snapshot)
+    }
+}
+
+private func companionSnapshot(assignments: [SnapshotTileAssignment]) -> DeckSnapshot {
+    DeckSnapshot(
+        capturedAt: Date(timeIntervalSinceReferenceDate: 1_000),
+        content: DeckSnapshotContent(
+            agents: [],
+            usage: [],
+            layout: SnapshotDeckLayout(
+                revision: 1,
+                columns: max(assignments.count, 1),
+                rows: 1,
+                assignments: assignments
+            )
+        )
+    )
 }
 
 private final class MemoryAppReviewStateStore: AppReviewStateStoring {

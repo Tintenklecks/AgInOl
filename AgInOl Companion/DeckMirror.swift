@@ -2,12 +2,42 @@
 //  DeckMirror.swift
 //  AgInOl Companion
 //
-//  Mirrored view of the Mac deck. Companion interactions are sent as
-//  requests; only the Mac applies and persists them as source of truth.
+//  Mirrored agent data with a device-local tile layout. The first layout is
+//  seeded from the Mac; subsequent tile choices belong to this Companion.
 //
 
 import Observation
 import SwiftUI
+
+struct CompanionDeckLayout: Codable, Equatable {
+    var assignments: [SnapshotTileAssignment]
+}
+
+@MainActor
+protocol CompanionDeckLayoutStoring: AnyObject {
+    func load() -> CompanionDeckLayout?
+    func save(_ layout: CompanionDeckLayout)
+}
+
+@MainActor
+final class UserDefaultsCompanionDeckLayoutStore: CompanionDeckLayoutStoring {
+    private static let key = "CompanionDeckLayout.v1"
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func load() -> CompanionDeckLayout? {
+        guard let data = defaults.data(forKey: Self.key) else { return nil }
+        return try? JSONDecoder().decode(CompanionDeckLayout.self, from: data)
+    }
+
+    func save(_ layout: CompanionDeckLayout) {
+        guard let data = try? JSONEncoder().encode(layout) else { return }
+        defaults.set(data, forKey: Self.key)
+    }
+}
 
 @MainActor
 @Observable
@@ -21,15 +51,16 @@ final class DeckMirror {
     private(set) var isLoadingHistory = false
     private(set) var historyError: String?
     private(set) var includingHiddenHistory = false
+    private(set) var visibleSlotCount = 0
+    private(set) var deviceLayout: CompanionDeckLayout?
 
     @ObservationIgnored private let sync: any DeckSyncSubscribing
     @ObservationIgnored private let requester: (any CompanionRequesting)?
+    @ObservationIgnored private let layoutStore: any CompanionDeckLayoutStoring
     @ObservationIgnored private var clock: Timer?
     @ObservationIgnored private var pending: [String: PendingRequest] = [:]
-    @ObservationIgnored private var assignmentOverrides: [Int: SnapshotTileAssignment] = [:]
 
     private enum PendingRequest {
-        case tile(slot: Int, assignment: SnapshotTileAssignment, sentAt: Date)
         case historyPage(reset: Bool)
         case historyDetail(eventID: String)
         case historyHidden(eventID: String, hidden: Bool)
@@ -37,10 +68,14 @@ final class DeckMirror {
 
     /// Defaults to the iCloud KVS transport. Built in the body rather
     /// than as a default argument, which would be evaluated off the actor.
-    init(sync: (any DeckSyncSubscribing)? = nil) {
+    init(sync: (any DeckSyncSubscribing)? = nil,
+         layoutStore: (any CompanionDeckLayoutStoring)? = nil) {
         let service = sync ?? KVSDeckSyncService()
         self.sync = service
         requester = service as? any CompanionRequesting
+        let resolvedLayoutStore = layoutStore ?? UserDefaultsCompanionDeckLayoutStore()
+        self.layoutStore = resolvedLayoutStore
+        deviceLayout = resolvedLayoutStore.load()
     }
 
     func start() {
@@ -48,12 +83,7 @@ final class DeckMirror {
             guard let self else { return }
             withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
                 self.snapshot = snapshot
-                if let layout = snapshot.content.layout {
-                    self.assignmentOverrides = self.assignmentOverrides.filter { slot, assignment in
-                        guard layout.assignments.indices.contains(slot) else { return false }
-                        return layout.assignments[slot] != assignment
-                    }
-                }
+                self.seedDeviceLayoutIfNeeded()
             }
         }
         requester?.onResponse = { [weak self] response in
@@ -61,6 +91,7 @@ final class DeckMirror {
         }
         sync.start()
         snapshot = sync.latest
+        seedDeviceLayoutIfNeeded()
 
         guard clock == nil else { return }
         clock = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
@@ -70,19 +101,34 @@ final class DeckMirror {
 
     var agents: [SnapshotAgent] { snapshot?.content.agents ?? [] }
     var usage: [SnapshotUsage] { snapshot?.content.usage ?? [] }
-    var layout: SnapshotDeckLayout? { snapshot?.content.layout }
-
     var tileAssignments: [SnapshotTileAssignment] {
-        let slotCount = max((layout?.columns ?? 4) * (layout?.rows ?? 2), 1)
-        var result = layout?.assignments ?? legacyAssignments
+        let macSlotCount = snapshot?.content.layout.map { $0.columns * $0.rows } ?? 8
+        let slotCount = visibleSlotCount > 0 ? visibleSlotCount : max(macSlotCount, 1)
+        let source = deviceLayout?.assignments
+            ?? snapshot?.content.layout?.assignments
+            ?? legacyAssignments
+        var result = source
         if result.count < slotCount {
             result.append(contentsOf: repeatElement(.spacer, count: slotCount - result.count))
         }
         if result.count > slotCount { result = Array(result.prefix(slotCount)) }
-        for (slot, assignment) in assignmentOverrides where result.indices.contains(slot) {
-            result[slot] = assignment
-        }
         return result
+    }
+
+    func configureSlotCount(_ count: Int) {
+        let count = max(count, 1)
+        guard visibleSlotCount != count else {
+            seedDeviceLayoutIfNeeded()
+            return
+        }
+        visibleSlotCount = count
+        seedDeviceLayoutIfNeeded()
+        guard var layout = deviceLayout, layout.assignments.count < count else { return }
+        layout.assignments.append(contentsOf: repeatElement(
+            .spacer,
+            count: count - layout.assignments.count
+        ))
+        persist(layout)
     }
 
     private var legacyAssignments: [SnapshotTileAssignment] {
@@ -106,12 +152,33 @@ final class DeckMirror {
 
     func assign(_ assignment: SnapshotTileAssignment, toSlot slot: Int) {
         guard tileAssignments.indices.contains(slot) else { return }
-        assignmentOverrides[slot] = assignment
-        send(.setTile(slot: slot, assignment: assignment), pending: .tile(
-            slot: slot,
-            assignment: assignment,
-            sentAt: Date()
-        ))
+        seedDeviceLayoutIfNeeded()
+        var layout = deviceLayout ?? CompanionDeckLayout(assignments: tileAssignments)
+        if layout.assignments.count <= slot {
+            layout.assignments.append(contentsOf: repeatElement(
+                .spacer,
+                count: slot + 1 - layout.assignments.count
+            ))
+        }
+        layout.assignments[slot] = assignment
+        persist(layout)
+    }
+
+    private func seedDeviceLayoutIfNeeded() {
+        guard deviceLayout == nil, visibleSlotCount > 0, snapshot != nil else { return }
+        var assignments = snapshot?.content.layout?.assignments ?? legacyAssignments
+        if assignments.count < visibleSlotCount {
+            assignments.append(contentsOf: repeatElement(
+                .spacer,
+                count: visibleSlotCount - assignments.count
+            ))
+        }
+        persist(CompanionDeckLayout(assignments: assignments))
+    }
+
+    private func persist(_ layout: CompanionDeckLayout) {
+        deviceLayout = layout
+        layoutStore.save(layout)
     }
 
     func loadFirstHistoryPage(includingHidden: Bool? = nil) {
@@ -174,7 +241,6 @@ final class DeckMirror {
         case .historyDetail(let eventID, let content):
             historyContents[eventID] = content
         case .failed(let message):
-            if case .tile(let slot, _, _) = request { assignmentOverrides[slot] = nil }
             isLoadingHistory = false
             historyError = message
         }
@@ -182,10 +248,6 @@ final class DeckMirror {
 
     private func applyAcknowledgement(for request: PendingRequest) {
         switch request {
-        case .tile(let slot, let assignment, _):
-            // Keep the optimistic value until the next authoritative layout
-            // snapshot arrives from the Mac.
-            assignmentOverrides[slot] = assignment
         case .historyHidden(let eventID, let hidden):
             if includingHiddenHistory {
                 historyEntries = historyEntries.map { entry in
