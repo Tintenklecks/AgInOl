@@ -39,14 +39,21 @@ final class AppSettings {
         didSet { UserDefaults.standard.set(showInfoBar, forKey: Self.showInfoBarKey) }
     }
 
+    /// Show the Did You Know dialog when AgInOl starts.
+    var showTipsOnLaunch: Bool {
+        didSet { UserDefaults.standard.set(showTipsOnLaunch, forKey: Self.showTipsOnLaunchKey) }
+    }
+
     private static let onlineAccessKey = "OnlineAccessEnabled"
     private static let gridColumnsKey = "GridColumns"
     private static let gridRowsKey = "GridRows"
     private static let showInfoBarKey = "ShowInfoBar"
+    private static let showTipsOnLaunchKey = "ShowTipsOnLaunch"
 
     private init() {
         onlineAccess = UserDefaults.standard.bool(forKey: Self.onlineAccessKey)
         showInfoBar = UserDefaults.standard.object(forKey: Self.showInfoBarKey) as? Bool ?? true
+        showTipsOnLaunch = UserDefaults.standard.object(forKey: Self.showTipsOnLaunchKey) as? Bool ?? true
         let columns = UserDefaults.standard.integer(forKey: Self.gridColumnsKey)
         gridColumns = Self.columnOptions.contains(columns) ? columns : 4
         let rows = UserDefaults.standard.integer(forKey: Self.gridRowsKey)

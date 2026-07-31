@@ -55,6 +55,15 @@ nonisolated enum CollectorFiles {
         return String(decoding: data, as: UTF8.self)
     }
 
+    /// First `maxBytes` of a file. Session headers and initial prompts live
+    /// near the front, so history discovery never needs to load whole logs.
+    static func readHead(_ path: String, maxBytes: Int) -> String {
+        guard let handle = FileHandle(forReadingAtPath: path) else { return "" }
+        defer { try? handle.close() }
+        guard let data = try? handle.read(upToCount: maxBytes) else { return "" }
+        return String(decoding: data, as: UTF8.self)
+    }
+
     /// Parse one JSONL blob into dictionaries, skipping bad lines.
     static func jsonLines(_ text: String) -> [[String: Any]] {
         text.split(separator: "\n").compactMap { line in
@@ -98,6 +107,44 @@ nonisolated enum CollectorFiles {
         }
         guard clean.count > limit else { return clean }
         return clean.prefix(limit).trimmingCharacters(in: .whitespaces) + "…"
+    }
+
+    /// A compact memory cue suitable for permanent local history. Common
+    /// CLI-injected XML context blocks are removed before whitespace folding.
+    static func contentSnippet(_ text: String?, limit: Int = 160) -> String? {
+        var clean = text ?? ""
+        for tag in ["system-reminder", "environment_context", "recommended_plugins"] {
+            clean = clean.replacingOccurrences(
+                of: "<\(tag)(?:\\s[^>]*)?>.*?</\(tag)>",
+                with: " ",
+                options: [.regularExpression, .caseInsensitive]
+            )
+        }
+        clean = clean
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else { return nil }
+        guard !["new session", "untitled", "untitled session"]
+            .contains(clean.lowercased()) else { return nil }
+        guard clean.count > limit else { return clean }
+        return clean.prefix(limit).trimmingCharacters(in: .whitespaces) + "…"
+    }
+
+    /// Text carried either directly or in the content arrays used by Claude,
+    /// Codex and Kimi. Non-text attachments are intentionally ignored.
+    static func textContent(_ value: Any?) -> String? {
+        if let text = value as? String { return text }
+        if let object = value as? [String: Any] {
+            return (object["text"] as? String) ?? (object["content"] as? String)
+        }
+        guard let items = value as? [Any] else { return nil }
+        let parts = items.compactMap { item -> String? in
+            guard let object = item as? [String: Any] else { return item as? String }
+            let type = object["type"] as? String
+            guard type == nil || type == "text" || type == "input_text" else { return nil }
+            return (object["text"] as? String) ?? (object["content"] as? String)
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " ")
     }
 
     static func processAlive(pid: Int) -> Bool {

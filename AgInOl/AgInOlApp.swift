@@ -20,6 +20,11 @@ struct AgInOlApp: App {
             }
             .keyboardShortcut("d")
             Divider()
+            Button("Check for Updates...") {
+                SoftwareUpdateController.shared.checkForUpdates()
+            }
+            .disabled(!SoftwareUpdateController.shared.canCheckForUpdates)
+            Divider()
             Button("Quit AgInOl") {
                 NSApp.terminate(nil)
             }

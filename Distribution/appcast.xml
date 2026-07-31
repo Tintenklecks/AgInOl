@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+    <channel>
+        <title>AgInOl Updates</title>
+        <link>https://aiia.li/downloads/aginol_appcast.xml</link>
+        <description>Release feed for AgInOl.</description>
+        <language>en</language>
+        <item>
+            <title>AgInOl 1.0</title>
+            <description><![CDATA[
+                <p>Initial public updater metadata.</p>
+            ]]></description>
+            <pubDate>Thu, 30 Jul 2026 00:00:00 +0200</pubDate>
+            <sparkle:version>5</sparkle:version>
+            <sparkle:shortVersionString>1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.5</sparkle:minimumSystemVersion>
+            <enclosure
+                url="https://aiia.li/downloads/AgInOl-1.0.zip"
+                sparkle:edSignature="REPLACE_WITH_SPARKLE_EDDSA_SIGNATURE"
+                length="REPLACE_WITH_FILE_SIZE_BYTES"
+                type="application/octet-stream" />
+        </item>
+    </channel>
+</rss>

@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "build": 5,
+  "minimumSystemVersion": "26.5",
+  "releaseDate": "2026-07-30",
+  "downloadURL": "https://aiia.li/downloads/AgInOl-1.0.zip",
+  "appcastURL": "https://aiia.li/downloads/aginol_appcast.xml",
+  "sha256": "REPLACE_WITH_SHA256",
+  "sparkleEdDSASignature": "REPLACE_WITH_SPARKLE_EDDSA_SIGNATURE",
+  "releaseNotes": "Initial public updater metadata."
+}

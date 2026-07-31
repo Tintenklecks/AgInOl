@@ -30,6 +30,8 @@ struct DeckView: View {
     @State private var showOnlinePrompt = false
     @State private var showAgentList = false
     @State private var sheetAgentID: String?
+    @State private var showTipDialog = false
+    @State private var currentTipIndex = 0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -96,6 +98,11 @@ struct DeckView: View {
             }
         }
         .overlay {
+            if showTipDialog {
+                tipDialogOverlay
+            }
+        }
+        .overlay {
             // Looked up live: the agent's sessions can settle while the
             // sheet is open, and a stale copy would acknowledge nothing.
             if let id = sheetAgentID, let agent = model.agent(withID: id) {
@@ -115,6 +122,7 @@ struct DeckView: View {
         .onAppear {
             model.start()
             show = true
+            showTipDialog = settings.showTipsOnLaunch
         }
         // The window is sized manually (no hosting constraints): grow
         // immediately, shrink after the spring animation settles.
@@ -146,10 +154,48 @@ struct DeckView: View {
                         showSettings = false
                     }
                 },
+                onShowTips: {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        settings.showTipsOnLaunch = true
+                        showSettings = false
+                        showTipDialog = true
+                    }
+                },
                 onQuit: { NSApp.terminate(nil) }
             )
             .transition(.scale(scale: 0.92, anchor: .bottomTrailing).combined(with: .opacity))
         }
+    }
+
+    private var tipDialogOverlay: some View {
+        let close = {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                showTipDialog = false
+            }
+        }
+        return ZStack {
+            Color.black.opacity(0.45)
+                .clipShape(RoundedRectangle(cornerRadius: DeckMetrics.bezelCorner,
+                                            style: .continuous))
+                .onTapGesture(perform: close)
+            DidYouKnowCard(
+                tip: Self.tips[currentTipIndex],
+                tipNumber: currentTipIndex + 1,
+                tipCount: Self.tips.count,
+                onClose: close,
+                onDontShow: {
+                    settings.showTipsOnLaunch = false
+                    close()
+                },
+                onNext: {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                        currentTipIndex = (currentTipIndex + 1) % Self.tips.count
+                    }
+                }
+            )
+            .transition(.scale(scale: 0.92).combined(with: .opacity))
+        }
+        .onExitCommand(perform: close)
     }
 
     private var gridWidth: CGFloat {
@@ -337,6 +383,15 @@ struct DeckView: View {
             }
         }
     }
+
+    private static let tips: [String] = [
+        "Double-tap the frame to tuck the deck to the nearest screen edge. Click the visible strip to bring it back.",
+        "Long-press any key to choose what that button displays.",
+        "Tap an agent status key to see the open sessions behind its count.",
+        "Tap ALL AGENTS for a compact overview of every provider AgInOl can see.",
+        "Tap the info key or the info-bar arrows to cycle through status and usage pages.",
+        "Online plan limits stay off until you enable them in Settings."
+    ]
 
     // MARK: - Key picker (long-press, two layers)
 
@@ -1286,6 +1341,7 @@ struct GearButton: View {
 struct SettingsCard: View {
     @Bindable var settings: AppSettings
     let onClose: () -> Void
+    let onShowTips: () -> Void
     let onQuit: () -> Void
 
     var body: some View {
@@ -1346,6 +1402,44 @@ struct SettingsCard: View {
                 .padding(.top, 4)
             }
             .padding(.vertical, 12)
+
+            HairlineSeparator()
+
+            HStack(spacing: 10) {
+                Image(systemName: "arrow.down.app.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(DeckColor.green)
+                Text("Check for Updates")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.9))
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.35))
+            }
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                SoftwareUpdateController.shared.checkForUpdates()
+            }
+
+            HairlineSeparator()
+
+            HStack(spacing: 10) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(DeckColor.amber)
+                Text("Show Did You Know")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.9))
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.35))
+            }
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onShowTips)
 
             HairlineSeparator()
 
@@ -1410,6 +1504,77 @@ struct SettingsCard: View {
                 }
             }
         }
+    }
+}
+
+struct DidYouKnowCard: View {
+    let tip: String
+    let tipNumber: Int
+    let tipCount: Int
+    let onClose: () -> Void
+    let onDontShow: () -> Void
+    let onNext: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DeckColor.amber)
+                Text("DID YOU KNOW")
+                    .font(.system(size: 10, weight: .heavy))
+                    .tracking(1.5)
+                    .foregroundStyle(.white.opacity(0.6))
+                Spacer()
+                CardButton(systemImage: "xmark", action: onClose)
+            }
+            .padding(.bottom, 12)
+
+            Text(tip)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.9))
+                .fixedSize(horizontal: false, vertical: true)
+                .id(tipNumber)
+                .transition(.opacity.combined(with: .offset(y: 4)))
+
+            Text("\(tipNumber) / \(tipCount)")
+                .font(.system(size: 9, weight: .bold))
+                .monospacedDigit()
+                .foregroundStyle(.white.opacity(0.35))
+                .padding(.top, 10)
+
+            HStack(spacing: 8) {
+                Text("DONT SHOW ANYMORE")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.68))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(Capsule().fill(.white.opacity(0.08)))
+                    .contentShape(Capsule())
+                    .onTapGesture(perform: onDontShow)
+                Spacer()
+                Text("NEXT TIP")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.black.opacity(0.85))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(Capsule().fill(DeckColor.green))
+                    .contentShape(Capsule())
+                    .onTapGesture(perform: onNext)
+            }
+            .padding(.top, 14)
+        }
+        .padding(16)
+        .frame(width: 270)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(white: 0.09))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(.white.opacity(0.1), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
+        )
     }
 }
 

@@ -26,6 +26,7 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
     private let spendScanner = ClaudeSpendScanner()
     private var spend = SpendSnapshot()
     private var spendScannedAt = Date.distantPast
+    private var startCache: [String: (size: Int, candidate: SessionStartCandidate?)] = [:]
 
     init() {
         let env = ProcessInfo.processInfo.environment
@@ -61,6 +62,7 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
         }
 
         let sessions = readSessions(sessionsDir: sessionsDir, projects: projects, context: context)
+        let startCandidates = historyStarts(from: projects)
 
         let needsSpend = lock.withLock {
             let needsSpend = now.timeIntervalSince(spendScannedAt) > 60
@@ -74,6 +76,7 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
 
         let (currentUsage, currentSpend) = lock.withLock { (usage, spend) }
         return ProviderReport(installed: true, sessions: sessions,
+                              startCandidates: startCandidates,
                               usage: currentUsage, spend: currentSpend)
     }
 
@@ -161,6 +164,49 @@ nonisolated final class ClaudeCollector: AgentCollector, @unchecked Sendable {
         }
         if let name { return name }
         return String(localized: "session \(sessionID.prefix(6))")
+    }
+
+    // MARK: - Activity history
+
+    private func historyStarts(from projects: [FileStamp]) -> [SessionStartCandidate] {
+        projects.compactMap { file in
+            if let cached = lock.withLock({ startCache[file.path] }),
+               cached.candidate != nil || cached.size == file.size {
+                return cached.candidate
+            }
+            let sessionID = ((file.path as NSString).lastPathComponent as NSString)
+                .deletingPathExtension
+            let candidate = Self.parseStart(
+                CollectorFiles.readHead(file.path, maxBytes: 1024 * 1024),
+                sessionID: sessionID,
+                fallback: file.mtime
+            )
+            lock.withLock {
+                startCache[file.path] = (file.size, candidate)
+                if startCache.count > 4_096 { startCache.removeAll() }
+            }
+            return candidate
+        }
+    }
+
+    static func parseStart(_ text: String, sessionID: String,
+                           fallback: Date) -> SessionStartCandidate? {
+        for event in CollectorFiles.jsonLines(text) {
+            guard event["type"] as? String == "user",
+                  event["toolUseResult"] == nil,
+                  event["isMeta"] as? Bool != true,
+                  let message = event["message"] as? [String: Any],
+                  let snippet = CollectorFiles.contentSnippet(
+                    CollectorFiles.textContent(message["content"])
+                  ) else { continue }
+            return SessionStartCandidate(
+                sessionID: sessionID,
+                startedAt: CollectorFiles.parseTimestamp(event["timestamp"], fallback: fallback),
+                snippet: snippet,
+                snippetSource: "firstPrompt"
+            )
+        }
+        return nil
     }
 
     // MARK: - Tail parsing

@@ -47,6 +47,9 @@ nonisolated struct UsageSnapshot: Sendable {
 nonisolated struct ProviderReport: Sendable {
     var installed: Bool
     var sessions: [SessionSnapshot] = []
+    /// Content-bearing session starts discovered in the provider's local
+    /// history. The activity store deduplicates these across polls/restarts.
+    var startCandidates: [SessionStartCandidate] = []
     var usage = UsageSnapshot()
     /// Offline token/cost estimate from local logs (Claude only, so far).
     var spend: SpendSnapshot?
