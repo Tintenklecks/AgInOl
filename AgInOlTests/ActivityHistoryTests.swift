@@ -53,6 +53,38 @@ struct ActivityHistoryTests {
                 == "Implement a chronological history with hideable entries.")
     }
 
+    @Test func contentSnippetKeepsTheCompletePromptByDefault() {
+        let prompt = String(repeating: "complete prompt text ", count: 20)
+            .trimmingCharacters(in: .whitespaces)
+        #expect(prompt.count > 160)
+        #expect(CollectorFiles.contentSnippet(prompt) == prompt)
+        #expect(CollectorFiles.contentSnippet(prompt, limit: 160)?.hasSuffix("…") == true)
+    }
+
+    @Test func appendsFullTextEnrichmentWithoutChangingTheExistingEvent() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("AgInOl-History-\(UUID().uuidString)", isDirectory: true)
+        let store = ActivityHistoryStore(
+            databaseURL: directory.appendingPathComponent("history.sqlite3")
+        )
+        let fullPrompt = String(repeating: "full Codex prompt ", count: 20)
+            .trimmingCharacters(in: .whitespaces)
+        let shortenedPrompt = CollectorFiles.contentSnippet(fullPrompt, limit: 160)!
+
+        try await store.append([
+            SessionStartCandidate(sessionID: "existing", startedAt: .distantPast,
+                                  snippet: shortenedPrompt, snippetSource: "firstPrompt")
+        ], providerID: "codex", providerName: "CODEX")
+        try await store.append([
+            SessionStartCandidate(sessionID: "existing", startedAt: .distantPast,
+                                  snippet: fullPrompt, snippetSource: "firstPrompt")
+        ], providerID: "codex", providerName: "CODEX")
+
+        let entries = try await store.entries(includingHidden: false)
+        #expect(entries.count == 1)
+        #expect(entries[0].snippet == fullPrompt)
+    }
+
     @Test func claudeStartUsesFirstUserPrompt() {
         let jsonl = """
         {"type":"system","timestamp":"2026-07-31T08:00:00Z"}

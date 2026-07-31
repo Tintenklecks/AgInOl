@@ -32,6 +32,7 @@ struct DeckView: View {
     @State private var sheetAgentID: String?
     @State private var showHistory = false
     @State private var historyModel = ActivityHistoryModel()
+    @State private var expandedHistoryEntryID: String?
     @State private var showTipDialog = false
     @State private var currentTipIndex = 0
 
@@ -682,7 +683,12 @@ struct DeckView: View {
                     }
                     CardButton(systemImage: "xmark", action: close)
                 }
-                .padding(.bottom, 8)
+                .padding(.bottom, 3)
+
+                Text("Tap an entry to show the full text. Tap it again to collapse it.")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.38))
+                    .padding(.bottom, 8)
 
                 if historyModel.isLoading && historyModel.entries.isEmpty {
                     ProgressView()
@@ -755,7 +761,8 @@ struct DeckView: View {
     }
 
     private func historyRow(_ entry: ActivityHistoryEntry) -> some View {
-        HStack(alignment: .top, spacing: 9) {
+        let isExpanded = expandedHistoryEntryID == entry.id
+        return HStack(alignment: .top, spacing: 9) {
             Circle()
                 .fill(historyTint(for: entry.providerID))
                 .frame(width: 7, height: 7)
@@ -769,14 +776,24 @@ struct DeckView: View {
                         .font(.system(size: 9, weight: .semibold))
                         .monospacedDigit()
                         .foregroundStyle(.white.opacity(0.38))
+                    Spacer(minLength: 4)
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.3))
                 }
                 Text(entry.snippet)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.white.opacity(entry.isHidden ? 0.4 : 0.82))
-                    .lineLimit(3)
+                    .lineLimit(isExpanded ? nil : 3)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Spacer(minLength: 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    expandedHistoryEntryID = isExpanded ? nil : entry.id
+                }
+            }
             CardButton(systemImage: entry.isHidden ? "eye" : "eye.slash") {
                 historyModel.setHidden(!entry.isHidden, entry: entry)
             }

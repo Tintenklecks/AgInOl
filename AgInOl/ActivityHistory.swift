@@ -61,32 +61,57 @@ actor ActivityHistoryStore {
         let db = try openDatabase()
         try execute("BEGIN IMMEDIATE TRANSACTION;", in: db)
         do {
-            let sql = """
+            let eventSQL = """
             INSERT OR IGNORE INTO activity_event
               (event_id, occurred_at, observed_at, provider_id, provider_name,
                session_id, snippet, snippet_source)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?);
             """
-            var statement: OpaquePointer?
-            guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            let contentSQL = """
+            INSERT OR IGNORE INTO activity_event_content
+              (event_id, observed_at, content)
+            VALUES (?, ?, ?);
+            """
+            var eventStatement: OpaquePointer?
+            var contentStatement: OpaquePointer?
+            guard sqlite3_prepare_v2(db, eventSQL, -1, &eventStatement, nil) == SQLITE_OK else {
                 throw error(for: db, fallback: "History insert could not be prepared")
             }
-            defer { sqlite3_finalize(statement) }
+            defer { sqlite3_finalize(eventStatement) }
+            guard sqlite3_prepare_v2(db, contentSQL, -1, &contentStatement, nil) == SQLITE_OK else {
+                throw error(for: db, fallback: "History content insert could not be prepared")
+            }
+            defer { sqlite3_finalize(contentStatement) }
 
             for candidate in candidates {
-                guard let snippet = CollectorFiles.contentSnippet(candidate.snippet) else { continue }
-                sqlite3_reset(statement)
-                sqlite3_clear_bindings(statement)
-                bind("session-start:\(providerID):\(candidate.sessionID)", at: 1, to: statement)
-                sqlite3_bind_double(statement, 2, candidate.startedAt.timeIntervalSince1970)
-                sqlite3_bind_double(statement, 3, Date().timeIntervalSince1970)
-                bind(providerID, at: 4, to: statement)
-                bind(providerName, at: 5, to: statement)
-                bind(candidate.sessionID, at: 6, to: statement)
-                bind(snippet, at: 7, to: statement)
-                bind(candidate.snippetSource, at: 8, to: statement)
-                guard sqlite3_step(statement) == SQLITE_DONE else {
+                guard let fullContent = CollectorFiles.contentSnippet(candidate.snippet),
+                      let snippet = CollectorFiles.contentSnippet(fullContent, limit: 160) else {
+                    continue
+                }
+                let eventID = "session-start:\(providerID):\(candidate.sessionID)"
+                let observedAt = Date().timeIntervalSince1970
+                sqlite3_reset(eventStatement)
+                sqlite3_clear_bindings(eventStatement)
+                bind(eventID, at: 1, to: eventStatement)
+                sqlite3_bind_double(eventStatement, 2, candidate.startedAt.timeIntervalSince1970)
+                sqlite3_bind_double(eventStatement, 3, observedAt)
+                bind(providerID, at: 4, to: eventStatement)
+                bind(providerName, at: 5, to: eventStatement)
+                bind(candidate.sessionID, at: 6, to: eventStatement)
+                bind(snippet, at: 7, to: eventStatement)
+                bind(candidate.snippetSource, at: 8, to: eventStatement)
+                guard sqlite3_step(eventStatement) == SQLITE_DONE else {
                     throw error(for: db, fallback: "History entry could not be appended")
+                }
+
+                guard fullContent != snippet else { continue }
+                sqlite3_reset(contentStatement)
+                sqlite3_clear_bindings(contentStatement)
+                bind(eventID, at: 1, to: contentStatement)
+                sqlite3_bind_double(contentStatement, 2, observedAt)
+                bind(fullContent, at: 3, to: contentStatement)
+                guard sqlite3_step(contentStatement) == SQLITE_DONE else {
+                    throw error(for: db, fallback: "History content could not be appended")
                 }
             }
             try execute("COMMIT;", in: db)
@@ -101,7 +126,13 @@ actor ActivityHistoryStore {
         let hiddenClause = includingHidden ? "" : "WHERE h.event_id IS NULL"
         let sql = """
         SELECT e.sequence, e.event_id, e.occurred_at, e.observed_at,
-               e.provider_id, e.provider_name, e.session_id, e.snippet,
+               e.provider_id, e.provider_name, e.session_id,
+               COALESCE((
+                 SELECT c.content FROM activity_event_content c
+                 WHERE c.event_id = e.event_id
+                 ORDER BY length(c.content) DESC, c.sequence DESC
+                 LIMIT 1
+               ), e.snippet),
                e.snippet_source, h.event_id IS NOT NULL
         FROM activity_event e
         LEFT JOIN hidden_activity_event h ON h.event_id = e.event_id
@@ -212,6 +243,13 @@ actor ActivityHistoryStore {
     );
     CREATE INDEX IF NOT EXISTS activity_event_occurred_at
       ON activity_event(occurred_at DESC);
+    CREATE TABLE IF NOT EXISTS activity_event_content (
+      sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id TEXT NOT NULL REFERENCES activity_event(event_id) ON DELETE RESTRICT,
+      observed_at REAL NOT NULL,
+      content TEXT NOT NULL,
+      UNIQUE(event_id, content)
+    );
     CREATE TABLE IF NOT EXISTS hidden_activity_event (
       event_id TEXT PRIMARY KEY REFERENCES activity_event(event_id) ON DELETE RESTRICT,
       hidden_at REAL NOT NULL
@@ -222,6 +260,12 @@ actor ActivityHistoryStore {
     CREATE TRIGGER IF NOT EXISTS activity_event_no_delete
       BEFORE DELETE ON activity_event
       BEGIN SELECT RAISE(ABORT, 'activity history is append-only'); END;
+    CREATE TRIGGER IF NOT EXISTS activity_event_content_no_update
+      BEFORE UPDATE ON activity_event_content
+      BEGIN SELECT RAISE(ABORT, 'activity history content is append-only'); END;
+    CREATE TRIGGER IF NOT EXISTS activity_event_content_no_delete
+      BEFORE DELETE ON activity_event_content
+      BEGIN SELECT RAISE(ABORT, 'activity history content is append-only'); END;
     """
 }
 

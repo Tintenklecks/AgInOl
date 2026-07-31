@@ -109,9 +109,10 @@ nonisolated enum CollectorFiles {
         return clean.prefix(limit).trimmingCharacters(in: .whitespaces) + "…"
     }
 
-    /// A compact memory cue suitable for permanent local history. Common
-    /// CLI-injected XML context blocks are removed before whitespace folding.
-    static func contentSnippet(_ text: String?, limit: Int = 160) -> String? {
+    /// A memory cue suitable for permanent local history. Common CLI-injected
+    /// XML context blocks are removed before whitespace folding. The full
+    /// cleaned prompt is retained unless a caller explicitly requests a limit.
+    static func contentSnippet(_ text: String?, limit: Int? = nil) -> String? {
         var clean = text ?? ""
         for tag in ["system-reminder", "environment_context", "recommended_plugins"] {
             clean = clean.replacingOccurrences(
@@ -126,7 +127,7 @@ nonisolated enum CollectorFiles {
         guard !clean.isEmpty else { return nil }
         guard !["new session", "untitled", "untitled session"]
             .contains(clean.lowercased()) else { return nil }
-        guard clean.count > limit else { return clean }
+        guard let limit, clean.count > limit else { return clean }
         return clean.prefix(limit).trimmingCharacters(in: .whitespaces) + "…"
     }
 
