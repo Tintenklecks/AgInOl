@@ -3,6 +3,12 @@ import Testing
 @testable import AgInOl
 
 struct ActivityHistoryTests {
+    @Test func historyCanBeAssignedToADeckKey() {
+        #expect(KeyAssignment.allCases.contains(.history))
+        #expect(KeyAssignment.history.providerID == nil)
+        #expect(KeyAssignment.defaultLayout.contains(.history))
+    }
+
     @Test func appendsOnceAndKeepsVisibilitySeparate() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("AgInOl-History-\(UUID().uuidString)", isDirectory: true)

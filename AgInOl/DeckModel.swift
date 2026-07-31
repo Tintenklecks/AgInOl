@@ -180,7 +180,7 @@ struct ProviderUsage: Identifiable {
 /// What one of the 8 physical keys displays. Chosen per key via long-press.
 enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
     case claudeStatus, codexStatus, opencodeStatus, kimiStatus
-    case allAgents
+    case allAgents, history
     case claudeUsed, claudeLeft, claudeSpend
     case claudeSessionUsed, claudeSessionLeft
     case codexUsed, codexLeft
@@ -198,6 +198,7 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
         case .opencodeStatus: String(localized: "OpenCode · status")
         case .kimiStatus:     String(localized: "Kimi · status")
         case .allAgents:      String(localized: "All agents")
+        case .history:        String(localized: "Activity history")
         case .claudeUsed:     String(localized: "Claude · % used")
         case .claudeLeft:     String(localized: "Claude · % left")
         case .claudeSpend:    String(localized: "Claude · tokens & cost")
@@ -225,6 +226,7 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
         case .claudeSessionLeft, .codexSessionLeft:        String(localized: "% left session")
         case .claudeSpend, .opencodeUsage, .kimiUsage:     String(localized: "Tokens & cost")
         case .allAgents:                                   String(localized: "All agents")
+        case .history:                                     String(localized: "Activity history")
         case .info:                                        String(localized: "Info pages")
         case .clock:                                       String(localized: "Clock")
         case .spacer:                                      String(localized: "Empty")
@@ -240,7 +242,7 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
              .codexSessionUsed, .codexSessionLeft:   "codex"
         case .opencodeStatus, .opencodeUsage:              "opencode"
         case .kimiStatus, .kimiUsage:                      "kimi"
-        case .allAgents, .info, .clock, .spacer:           nil
+        case .allAgents, .history, .info, .clock, .spacer: nil
         }
     }
 
@@ -250,7 +252,7 @@ enum KeyAssignment: String, CaseIterable, Identifiable, Codable {
     static let defaultLayout: [KeyAssignment] = [
         .claudeStatus, .codexStatus, .opencodeStatus, .kimiStatus,
         .claudeUsed, .codexUsed, .opencodeUsage, .kimiUsage,
-        .allAgents, .claudeSpend, .clock, .info,
+        .history, .allAgents, .claudeSpend, .clock,
         .claudeSessionUsed, .codexSessionUsed, .claudeLeft, .codexLeft,
         .claudeSessionLeft, .codexSessionLeft, .clock, .info,
         .info, .info, .info, .info,

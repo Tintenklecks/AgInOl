@@ -233,6 +233,10 @@ final class ActivityHistoryModel {
     private(set) var errorMessage: String?
     var includingHidden = false
 
+    var visibleCount: Int {
+        entries.lazy.filter { !$0.isHidden }.count
+    }
+
     private let store: ActivityHistoryStore
 
     init(store: ActivityHistoryStore = .shared) {

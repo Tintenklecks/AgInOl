@@ -139,8 +139,16 @@ struct DeckView: View {
         }
         .onAppear {
             model.start()
+            historyModel.refresh()
             show = true
             showTipDialog = settings.showTipsOnLaunch
+        }
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(3))
+                guard !Task.isCancelled else { break }
+                historyModel.refresh()
+            }
         }
         // The window is sized manually (no hosting constraints): grow
         // immediately, shrink after the spring animation settles.
@@ -283,6 +291,8 @@ struct DeckView: View {
                 ?? DeckColor.grayTile
         case .allAgents:
             DeckColor.oliveTile
+        case .history:
+            DeckColor.indigoTile
         case .claudeUsed, .claudeLeft, .codexUsed, .codexLeft, .opencodeUsage, .kimiUsage:
             model.usageEntry(forProvider: assignment.providerID!)?.tileBackground
                 ?? DeckColor.grayTile
@@ -308,6 +318,8 @@ struct DeckView: View {
             }
         case .allAgents:
             AllAgentsKeyContent(model: model)
+        case .history:
+            HistoryKeyContent(entryCount: historyModel.visibleCount)
         case .claudeUsed, .codexUsed, .opencodeUsage, .kimiUsage:
             if let entry = model.usageEntry(forProvider: assignment.providerID!) {
                 UsageKeyContent(usage: entry, now: model.now)
@@ -375,6 +387,9 @@ struct DeckView: View {
             case .allAgents:
                 model.showSummaryPage()
                 showAgentList = true
+            case .history:
+                historyModel.refresh()
+                showHistory = true
             case .claudeUsed, .claudeLeft, .codexUsed, .codexLeft, .opencodeUsage, .kimiUsage:
                 if let entry = model.usageEntry(forProvider: assignment.providerID!),
                    case .unavailable(let caption) = entry.kind, caption == "online off" {
@@ -408,7 +423,7 @@ struct DeckView: View {
         "Tap an agent status key to see the open sessions behind its count.",
         "Tap ALL AGENTS for a compact overview of every provider AgInOl can see.",
         "Tap the info key or the info-bar arrows to cycle through status and usage pages.",
-        "Tap the history button in the lower-left bezel to revisit detected session starts.",
+        "Tap the HISTORY key or the lower-left history button to revisit detected session starts.",
         "Online plan limits stay off until you enable them in Settings."
     ]
 
@@ -422,7 +437,7 @@ struct DeckView: View {
 
     /// Layer 1 general entries; providers get a layer 2 each. New
     /// OpenUsage-ported providers slot into this list.
-    private static let generalOptions: [KeyAssignment] = [.allAgents, .info, .clock, .spacer]
+    private static let generalOptions: [KeyAssignment] = [.allAgents, .history, .info, .clock, .spacer]
     private static let pickerProviders: [PickerProvider] = [
         PickerProvider(id: "claude", name: String(localized: "Claude"),
                        options: [.claudeStatus, .claudeUsed, .claudeLeft, .claudeSessionUsed, .claudeSessionLeft, .claudeSpend]),
@@ -1140,6 +1155,42 @@ struct AllAgentsKeyContent: View {
             Spacer(minLength: 0)
 
             Text("tap overview")
+                .font(.system(size: 7.5, weight: .medium))
+                .foregroundStyle(.white.opacity(0.38))
+                .padding(.bottom, 10)
+        }
+        .padding(.horizontal, 6)
+    }
+}
+
+struct HistoryKeyContent: View {
+    let entryCount: Int
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 5) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 10, weight: .bold))
+                Text("HISTORY")
+                    .font(.system(size: 10, weight: .bold))
+            }
+            .foregroundStyle(DeckColor.cyan)
+            .padding(.top, 12)
+
+            Spacer(minLength: 0)
+
+            Text("\(entryCount)")
+                .font(.system(size: 25, weight: .heavy))
+                .monospacedDigit()
+                .foregroundStyle(.white.opacity(0.95))
+
+            Text(entryCount == 1 ? "VISIBLE ENTRY" : "VISIBLE ENTRIES")
+                .font(.system(size: 7, weight: .bold))
+                .foregroundStyle(.white.opacity(0.68))
+
+            Spacer(minLength: 0)
+
+            Text("tap to open")
                 .font(.system(size: 7.5, weight: .medium))
                 .foregroundStyle(.white.opacity(0.38))
                 .padding(.bottom, 10)
