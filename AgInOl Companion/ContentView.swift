@@ -152,6 +152,7 @@ private struct CompanionTileButton<Content: View>: View {
     @ViewBuilder let content: Content
 
     @GestureState private var isPressed = false
+    @State private var pressBeganAt: Date?
 
     var body: some View {
         content
@@ -167,19 +168,40 @@ private struct CompanionTileButton<Content: View>: View {
     }
 
     private var interactionGesture: some Gesture {
-        LongPressGesture(minimumDuration: 0.5, maximumDistance: 24)
-            .updating($isPressed) { pressing, state, _ in state = pressing }
-            .exclusively(before: TapGesture())
-            .onEnded { result in
-                switch result {
-                case .first(true):
+        DragGesture(minimumDistance: 0)
+            .updating($isPressed) { _, state, _ in state = true }
+            .onChanged { value in
+                if pressBeganAt == nil { pressBeganAt = value.time }
+            }
+            .onEnded { value in
+                let duration = pressBeganAt.map { value.time.timeIntervalSince($0) } ?? 0
+                pressBeganAt = nil
+                switch CompanionPressClassifier.classify(
+                    duration: duration,
+                    translation: value.translation
+                ) {
+                case .longPress:
                     onLongPress()
-                case .second:
+                case .tap:
                     onTap()
-                default:
+                case .cancelled:
                     break
                 }
             }
+    }
+}
+
+enum CompanionPressKind: Equatable {
+    case tap
+    case longPress
+    case cancelled
+}
+
+enum CompanionPressClassifier {
+    static func classify(duration: TimeInterval, translation: CGSize) -> CompanionPressKind {
+        let travel = hypot(translation.width, translation.height)
+        guard travel <= 24 else { return .cancelled }
+        return duration >= 0.5 ? .longPress : .tap
     }
 }
 

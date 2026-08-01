@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CoreGraphics
 import Testing
 @testable import AgInOl_Companion
 
@@ -141,6 +142,21 @@ struct AgInOl_CompanionTests {
         #expect(padPortrait.rows == 6)
         #expect(padLandscape.columns == 6)
         #expect(padLandscape.rows == 4)
+    }
+
+    @Test func companionPressClassifierKeepsTapAndLongPressIndependent() {
+        #expect(CompanionPressClassifier.classify(
+            duration: 0.12,
+            translation: .zero
+        ) == .tap)
+        #expect(CompanionPressClassifier.classify(
+            duration: 0.65,
+            translation: CGSize(width: 2, height: 1)
+        ) == .longPress)
+        #expect(CompanionPressClassifier.classify(
+            duration: 0.2,
+            translation: CGSize(width: 30, height: 0)
+        ) == .cancelled)
     }
 }
 
