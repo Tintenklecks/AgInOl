@@ -133,20 +133,53 @@ private struct CompanionDeckGrid: View {
 
         LazyVGrid(columns: columns, spacing: spacing) {
             ForEach(Array(assignments.enumerated()), id: \.offset) { slot, assignment in
-                Button {
-                    onTap(assignment)
-                } label: {
+                CompanionTileButton(
+                    onTap: { onTap(assignment) },
+                    onLongPress: { onLongPress(slot) }
+                ) {
                     AssignmentTile(assignment: assignment, mirror: mirror)
                         .frame(height: height)
                 }
-                .buttonStyle(.plain)
-                .onLongPressGesture(minimumDuration: 0.55) {
-                    onLongPress(slot)
-                }
-                .accessibilityHint("Long press to change this tile")
             }
         }
         .frame(maxHeight: .infinity, alignment: .center)
+    }
+}
+
+private struct CompanionTileButton<Content: View>: View {
+    let onTap: () -> Void
+    let onLongPress: () -> Void
+    @ViewBuilder let content: Content
+
+    @GestureState private var isPressed = false
+
+    var body: some View {
+        content
+            .contentShape(Rectangle())
+            .scaleEffect(isPressed ? 0.97 : 1)
+            .opacity(isPressed ? 0.82 : 1)
+            .animation(.easeOut(duration: 0.12), value: isPressed)
+            .highPriorityGesture(interactionGesture)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { onTap() }
+            .accessibilityAction(named: Text("Change tile")) { onLongPress() }
+            .accessibilityHint("Long press to change this tile")
+    }
+
+    private var interactionGesture: some Gesture {
+        LongPressGesture(minimumDuration: 0.5, maximumDistance: 24)
+            .updating($isPressed) { pressing, state, _ in state = pressing }
+            .exclusively(before: TapGesture())
+            .onEnded { result in
+                switch result {
+                case .first(true):
+                    onLongPress()
+                case .second:
+                    onTap()
+                default:
+                    break
+                }
+            }
     }
 }
 
@@ -222,14 +255,9 @@ private struct AssignmentTile: View {
                     .foregroundStyle(.white.opacity(0.5))
             }
         case .spacer:
-            Tile(background: DeckColor.grayTile) {
-                Spacer(minLength: 0)
-                Text("LEER")
-                    .font(.caption.weight(.bold))
-                    .tracking(1.2)
-                    .foregroundStyle(.white.opacity(0.28))
-                Spacer(minLength: 0)
-            }
+            Color.clear
+                .contentShape(Rectangle())
+                .accessibilityLabel("Empty tile")
         default:
             if let usage = mirror.usage.first(where: { $0.id == assignment.usageID }) {
                 UsageAssignmentTile(usage: usage, showRemaining: assignment.showsRemaining)

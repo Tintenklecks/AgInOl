@@ -36,6 +36,17 @@ struct DeckView: View {
     @State private var showTipDialog = false
     @State private var currentTipIndex = 0
 
+    /// Cards are wider than a one-column grid. Expand the panel only while
+    /// a card is visible, then return to the user's compact grid width.
+    private var hasPresentedOverlay: Bool {
+        showSettings || editingSlot != nil || showOnlinePrompt || showAgentList
+            || showHistory || showTipDialog || sheetAgentID != nil
+    }
+
+    private var deckWidth: CGFloat {
+        hasPresentedOverlay ? max(gridWidth, 270) : gridWidth
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             keyGrid
@@ -60,7 +71,7 @@ struct DeckView: View {
         // make the ideal size oscillate (wrapping/scaling text) and trip
         // AppKit's constraint-loop detector — an uncaught exception that
         // crashes the app at narrow grids.
-        .frame(width: gridWidth)
+        .frame(width: deckWidth)
         .padding(.horizontal, DeckMetrics.bezelPaddingH)
         .padding(.top, DeckMetrics.bezelPaddingTop)
         .padding(.bottom, DeckMetrics.bezelPaddingBottom)
@@ -160,6 +171,9 @@ struct DeckView: View {
             controller.gridDidChange()
         }
         .onChange(of: settings.showInfoBar) { _, _ in
+            controller.gridDidChange()
+        }
+        .onChange(of: hasPresentedOverlay) { _, _ in
             controller.gridDidChange()
         }
     }
@@ -628,6 +642,19 @@ struct DeckView: View {
                                 .foregroundStyle(.white.opacity(0.5))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.8)
+                            if let session = agent.openSessions.first {
+                                HStack(spacing: 5) {
+                                    Text(session.title)
+                                        .lineLimit(1)
+                                    if let since = session.since {
+                                        Spacer(minLength: 4)
+                                        Text(DeckModel.elapsed(since: since, now: model.now))
+                                            .monospacedDigit()
+                                    }
+                                }
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.42))
+                            }
                         }
                         Spacer(minLength: 8)
                         if agent.sessions > 0 {
