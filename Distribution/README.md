@@ -4,6 +4,9 @@ AgInOl uses Sparkle for in-app macOS updates. Sparkle owns the secure updater fl
 check feed, download archive, verify signature, quit the running app, replace the
 `.app` bundle, and relaunch.
 
+`RELEASE_AUTOMATION.md` describes how the manifests are produced — read that
+before touching `appcast.xml` or `aginol.json`, which are **generated files**.
+
 ## Xcode Setup
 
 Add Sparkle to the macOS `AgInOl` target from Xcode:
@@ -24,23 +27,40 @@ The Swift code is guarded with `canImport(Sparkle)`, so the project still builds
 before the package is added. Until Sparkle is linked, the update button shows a
 configuration alert instead of checking for updates.
 
+Generate the key pair once with Sparkle's `generate_keys`; it stores the private
+key in the login Keychain and prints the public key for `SUPublicEDKey`.
+
+## Cutting a release
+
+1. Bump the build number (`agvtool next-version -all`, or `CURRENT_PROJECT_VERSION`
+   in Xcode) and the marketing version if it changed.
+2. Write `release-notes/<marketing version>.html` (copy `TEMPLATE.html`).
+3. Run:
+
+   ```bash
+   Distribution/scripts/build_release.sh
+   ```
+
+   This archives, exports with Developer ID, notarizes, staples, zips into
+   `releases/`, and regenerates `appcast.xml` + `aginol.json`.
+4. Upload the new zip plus both manifests to the download area.
+5. Commit the regenerated manifests.
+
+`SKIP_NOTARIZE=1` gives a local dry run that skips only the notarization step.
+
+To re-generate the manifests without rebuilding — after re-downloading older
+archives, or to fix a URL prefix — run `Distribution/scripts/update_manifest.sh`
+on its own.
+
 ## Release Files
 
-Publish these files in the same download area:
+Published in the same download area:
 
 ```text
-appcast.xml
-aginol.json
-AgInOl-<version>.zip
+appcast.xml                    # authoritative Sparkle feed, generated
+aginol.json                    # website metadata, generated from the feed
+AgInOl-<version>-<build>.zip   # notarized, stapled, signed archive
 ```
 
-`appcast.xml` is the authoritative Sparkle update feed. `aginol.json` is optional
-metadata for a website or download page.
-
-Before publishing a release:
-
-1. Archive, sign, and notarize `AgInOl.app`.
-2. Zip the notarized app.
-3. Sign the zip with Sparkle's signing tool.
-4. Replace the placeholders in `appcast.xml` and `aginol.json`.
-5. Upload the zip and metadata files.
+Never overwrite a published zip: clients verify a signature over the exact
+bytes, so a changed file breaks updates for anyone holding the old manifest.

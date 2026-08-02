@@ -1,0 +1,6 @@
+# Shipped archives and Sparkle's generated deltas are build artifacts: they are
+# uploaded to the download area, not committed. The generated appcast.xml (one
+# level up) records what was released.
+*.zip
+*.delta
+*.html
