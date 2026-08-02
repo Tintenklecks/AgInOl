@@ -7,6 +7,7 @@
 
 import Foundation
 import Observation
+import ServiceManagement
 
 @Observable
 final class AppSettings {
@@ -19,6 +20,12 @@ final class AppSettings {
     var onlineAccess: Bool {
         didSet { UserDefaults.standard.set(onlineAccess, forKey: Self.onlineAccessKey) }
     }
+
+    /// Whether macOS launches AgInOl when the user logs in. The system login-item
+    /// registration is the source of truth, so this is intentionally not stored
+    /// in UserDefaults.
+    private(set) var launchAtLogin: Bool
+    private(set) var launchAtLoginError: String?
 
     /// Key-grid dimensions (columns × rows). 4×2 mirrors the Stream Deck
     /// Neo hardware; other combinations are picked in settings.
@@ -52,11 +59,41 @@ final class AppSettings {
 
     private init() {
         onlineAccess = UserDefaults.standard.bool(forKey: Self.onlineAccessKey)
+        launchAtLogin = SMAppService.mainApp.status == .enabled
+        launchAtLoginError = nil
         showInfoBar = UserDefaults.standard.object(forKey: Self.showInfoBarKey) as? Bool ?? true
         showTipsOnLaunch = UserDefaults.standard.object(forKey: Self.showTipsOnLaunchKey) as? Bool ?? true
         let columns = UserDefaults.standard.integer(forKey: Self.gridColumnsKey)
         gridColumns = Self.columnOptions.contains(columns) ? columns : 4
         let rows = UserDefaults.standard.integer(forKey: Self.gridRowsKey)
         gridRows = Self.rowOptions.contains(rows) ? rows : 2
+    }
+
+    func refreshLaunchAtLogin() {
+        launchAtLogin = SMAppService.mainApp.status == .enabled
+    }
+
+    func setLaunchAtLogin(_ enabled: Bool) {
+        launchAtLoginError = nil
+        let service = SMAppService.mainApp
+
+        do {
+            if enabled {
+                try service.register()
+            } else {
+                try service.unregister()
+            }
+        } catch {
+            launchAtLoginError = error.localizedDescription
+        }
+
+        refreshLaunchAtLogin()
+        if enabled, !launchAtLogin, launchAtLoginError == nil {
+            if service.status == .requiresApproval {
+                launchAtLoginError = String(localized: "Allow AgInOl in System Settings → General → Login Items to enable it.")
+            } else {
+                launchAtLoginError = String(localized: "AgInOl could not be enabled as a login item.")
+            }
+        }
     }
 }

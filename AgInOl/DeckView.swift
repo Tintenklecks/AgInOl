@@ -1616,8 +1616,7 @@ struct HistoryButton: View {
     }
 }
 
-/// Settings card: online access toggle + Quit. More (launch at login,
-/// opacity, providers) arrives with Phase 4.
+/// Settings card: launch behavior, online access, deck layout, and app actions.
 struct SettingsCard: View {
     @Bindable var settings: AppSettings
     let onClose: () -> Void
@@ -1639,6 +1638,31 @@ struct SettingsCard: View {
                 CardButton(systemImage: "xmark", action: onClose)
             }
             .padding(.bottom, 12)
+
+            HairlineSeparator()
+
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle(isOn: Binding(
+                    get: { settings.launchAtLogin },
+                    set: { settings.setLaunchAtLogin($0) }
+                )) {
+                    Text("Open at Login")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                }
+                .toggleStyle(DeckToggleStyle())
+                Text("Launch AgInOl when you log in so the service stays available for iPhone and iPad.")
+                    .font(.system(size: 8.5, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.4))
+                    .fixedSize(horizontal: false, vertical: true)
+                if let error = settings.launchAtLoginError {
+                    Text(error)
+                        .font(.system(size: 8.5, weight: .medium))
+                        .foregroundStyle(Color(red: 1.00, green: 0.42, blue: 0.38))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.vertical, 12)
 
             HairlineSeparator()
 
@@ -1753,6 +1777,9 @@ struct SettingsCard: View {
                 )
                 .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
         )
+        .onAppear {
+            settings.refreshLaunchAtLogin()
+        }
     }
 
     private func gridOptionRow(label: String, options: [Int],
